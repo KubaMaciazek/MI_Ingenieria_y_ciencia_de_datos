@@ -1,0 +1,10 @@
+COMO LUEGO LE PLANTEAMOS EJERCICIOS QUE ESTÁN RESUELTOS EN LA WEB, CAMBIO LOS NOMBRES DE LOS DATASETS PARA INTENTAR QUE NO IENTIFIQUEN LAS PAGINAS
+
+
+kings.dat --> reyes ---> ts_k1.dat
+
+nybirths.dat --> ts_n1.dat
+
+
+fancy.dat (souvenirs) --> ts_f1.dat  
+

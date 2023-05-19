@@ -1,0 +1,117 @@
+---
+title: "Estadística avanzada para ciencia de datos"
+description: |
+  Realization of exercise 1 for the topic of Hypothesis testing.
+author:
+  #"Jakub Maciążek"
+  name: "Jakub Maciążek </br>"
+  affiliation: Faculty of Information and Communication Technology, Wrocław University of Science and Technology
+subtitle: "Contrastes de Hipótesis - Ejercicio 1 Tests Estadísticos"
+output:
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+  pdf_document:   
+    latex_engine: xelatex   # added to knit to pdf 
+  html_document: default    # added to knit to html 
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(readr)
+
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+```
+
+
+# Exercise description
+
+> **Scenario**</br>
+    A medicine (M) has been developed that improves the results in the Computer Engineering Master's exams.</br>
+    The drug (M) or a placebo (P) is given to a group of students and scores are collected on a questionnaire (from 0 to 100) of the students in that group.</br>
+    It is desired to verify if there are differences between the students who took the medication and those who took the placebo (control group) with respect to the results of said questionnaire.
+
+**Given above scenario follow instructions**
+
+  Prepare an RMarkdown file explaining the steps to follow to study the proposed case. Deliver in the CV in a task the .Rmd file along with the output:
+  
+  - Download the file experimento1.csv from the datasets directory of the CV.
+  - Check if there is a difference in the results due to taking the medication.
+  - Use the statistical tests seen in class. Explain the results.
+
+
+# Data analysis
+
+
+  Main goal of the exercise is to determine, whether Medication has an effect on students performance. This can be achieved by comparing average result between the gropus, and comparing how different it was. Also important is to check whether that statistical information is significant, therefore reliable.
+
+## Data loading and primary samples analysis
+
+
+  First step to follow, is to load given data and analyze it's format, in order to decide on what tests to choose.
+
+
+```{r}
+experimento1 <- read_delim("S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Contrastes_de_hipothesis_y_regresion/Contraste_de_hypothesis/Ejercicio_1_Tests_estadisticos/experimento1.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+head(experimento1)
+
+```
+
+
+From above information, we can see, that relevant data is presented in two columns, 1st one indicating the score, and 2nd one indicating whether student took Medicine or Placebo.
+
+
+## Data preparation
+
+In order to conduct the test, data needs to be divided into two vectors, 1st one containing scores, and the 2nd one corresponding to information about taken Medication or Placebo.
+
+```{r}
+scores <- experimento1[[1]]
+
+labels <- experimento1[[2]]
+```
+
+
+## Running tests
+
+In order to conduct tests, we need to state null hypothesis against which test will be conducted and alternative hypothesis, therefore:
+
+  - $H_0$: Mean exam score does not differ between students that took Medicine or Placebo. (Meaning it has no effect)
+  - $H_A$: Mean exam score does differ between students that took Medicine or Placebo. (Medicine has an effect)
+
+<!-- ? -1- ? --> 
+
+  To choose the test, we need to think about 3 requirements samples need to pass: independence, normal distribution and equal variances:
+
+ - In this case we can assume independence of samples, as results of one student are not related to any other one. 
+  
+ - Regarding distribution, our test statistic is the note from the exam, score between 0 and 100. If this is a count of correctly answered questions, it would be not a continuous therefore binomial distribution. If this is any number from given range, being a continuous distribution, data would follow required normal distribution. As it is not stated, later one was assumed, allowing null hypothesis to predict that samples are normally distributed.
+  
+ - Variance among samples is unknown, therefore for the test it will not be stated that it is equal.
+
+  Considering all above, to test if difference between two means is real, we will use **Two Sample T-test**, and as the variance equality is unknown, **Welch's Test** will be conducted:
+
+<!-- ? -1- ? -->
+
+```{r}
+
+t.test(scores ~ labels)
+
+```
+
+## Test result analysis and conclusions
+
+<!-- ? -2- ? --> 
+
+  Given that p-value, which is smallest Type I error rate (α) that we have to be willing to tolerate if we want to reject the null hypothesis, is very high, and equal to 0.9304, when by convention it should be at most 0.05, we cannot qualify result of the test as significant, and reject $N_0$.
+  
+  This is because probability of making Type I Error would be ~93%. **Therefore, based on given data we cannot conclude that there is a statistically significant difference in the means of compared samples, and we can not confirm that the Medicine has any effect.**
+
+<!-- ? -2- ? --> 

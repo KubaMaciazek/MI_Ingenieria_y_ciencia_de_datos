@@ -1,0 +1,591 @@
+---
+title: "Estadística avanzada para ciencia de datos"
+description: |
+  Realization of exercises for the topic of Regression.
+author:
+  #"Jakub Maciążek"
+  name: "Jakub Maciążek </br>"
+  affiliation: Faculty of Information and Communication Technology, Wrocław University of Science and Technology
+subtitle: "Regresión - Ejercicios"
+output:
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+  pdf_document:   
+    latex_engine: xelatex   # added to knit to pdf 
+  html_document: default    # added to knit to html 
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(readr)
+
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+```
+
+# Exercise I
+> **ToDo:**
+>
+ - Import ToyotaCorolla dataset from the course website.
+ - Build linear models m1, m2 using Multiple Linear Regression.
+ - Analyze the goodness of fit and model quality, explaining the results.
+ 
+ 
+## Data import and analysys
+
+```{r}
+#water_df <- read.csv("S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Contrastes_de_hipothesis_y_regresion/Contraste_de_hypothesis/Ejercicio_2_Tests_estadisticos/water.csv")
+
+#head(water_df)
+
+ToyotaCorolla <- read.csv("S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Contrastes_de_hipothesis_y_regresion/Regresion/Exercises/ToyotaCorolla.csv")
+head(ToyotaCorolla)
+```
+
+From the analysis of the data set, it can be seen it contains both continuous and categorical variables:
+
+
+Continuous:
+
+ - price
+ - age
+ - KM (run kilometers)
+ - weight
+ 
+Categorical:
+
+ - FuelType (Diesel, Petrol)
+ - MetColor (True, False)
+ - Automatic (True, False)
+ - Doors (Nr of doors)
+ 
+Variables that theoretically could be continuous, but in practice come from a short range of values, and therefore should be considered as categorical.
+
+ - HP (Horse power)
+ - CC (cylinder capacity)
+
+
+  Regression requires numerical inputs, therefore categorical variables need to be converted into binary or numerical values. In this case all of the variables, except the FuelType, meet this criterion. Therefore FuelType will be converted under the hood by R to dummy binary variables.
+  
+  
+  **Dependent variable data normality** - For given example, it makes sens to build a model predicting car price based on other variables. This makes "price" variable a dependent one, which requires it to be normally distributed and continuous for linear model to work.
+
+```{r}  
+shapiro.test(ToyotaCorolla$Price)
+hist(ToyotaCorolla$Price)
+```
+
+  To test for normality, histogram graph was presented and Shapiro-Wilk test was conducted, which resulted in p-value smaller than 2.2e-16.
+  
+  From the histogram it can be seen, that data is highly positively skewed. Also, the result of the test is smaller than 0.05, meaning that distribution of variable differs from Normal distribution. Therefore, to receive more accurate prediction it would be useful to either use Generalized Linear Model from for exp. "gamma" family, or to transform the price with logarithmic function, before using standard linear model.
+  
+  However, knowing the model might be inaccurate due to above reasons, standard linear regression was conducted, as required by the Task.
+
+<!-- 
+
+IS ABOVE ANALYSIS CORRECT? cAN I USE THIS MODEL AT ALL? oR THIS ONLY APPLIES TO INDEPENDENT VARIABLES? SHOULD i HAVE CHECKED THEM THEN? wHAT ARE BASE RULES FOR STARTING THE REGRESSION ANALYSIS?
+
+Should I test for variables independence as well? Can I just assume data is continuous? Is it continuous here? 
+
+Btw, should I have checked with pearson correlation test if they are correlated at the beginning as well?
+
+--> 
+
+
+## Build of linear model
+
+```{r}
+#m1 <- lm(Price ~ Age + KM + FuelType + HP + MetColor + Automatic + Doors + Weight , data = ToyotaCorolla)
+#summary(m1)
+
+
+m1 <- lm(Price ~. , data = ToyotaCorolla)
+
+summary(m1)
+```
+
+<!-- 
+KRWA, nie wazne bo zapomnialem o CC
+
+What to do, when after conversion of categorical variable to dummy binary ones, some are significant, and other are not ?!?! Should I have kept petrol below? I can check with anova if one without it is better.
+
+#m2b <- lm(Price ~ Age + KM + FuelType + HP + Weight , data = ToyotaCorolla)
+#summary(m2b)
+
+--> 
+
+  Starting analysis with examination of the **F-statistic** and its corresponding **p-value**. It can be observed that its value equals 948 and is far from greater than 1, and p-value is essentialy 0, which means that at least one of the predictor variables is significantly related to the outcome variable. To check which predictors are significant, coefficient table was examined.
+  
+```{r}
+summary(m1)$coefficient
+```
+
+  Based on the **t-statistic**, it can be seen, that some variables are insignificant, as their Pr(>|t|) is higher than 0.05, meaning there is no significant association between the predictor and the outcome variable.
+  
+  In order to make a better model, new one was calculated, involving only significant variables (meaning all except MetColor and Doors).
+<!-- 
+ Also, as after binarization only one of the Fuel variables was significant, and it was far less significant than the others, it was also excluded from the model.
+--> 
+
+
+```{r}
+m2 <- lm(Price ~. -Doors -MetColor  , data = ToyotaCorolla)
+
+summary(m2)
+```
+
+  For new model all the predictors are significant, and received model has a following equation:
+
+$Price = \\ -3718 -122.1*Age - 0.01625*KM + 3388*FuelTypeDiesel + 1112*FuelTypePetrol \\  + 60.89*HP + 330.5*Automatic - 4.168*CC + 19.94*Weight$
+
+  Based on DF information, it can be said that it was computed based on 1427 independent pieces of information.
+
+<!-- 
+WHAT TO DO, if stgh, WITH THIS:
+
+
+  And confidence interval for model coefficients is: 
+
+```{r}
+confint(m2)
+```
+--> 
+
+
+## Model goodness and results analysys
+
+**Example model explanation**
+
+  For the second model m2, following equation was obtained: Price = -3718 -122.1 * Age - 0.01625 * KM + 3388 * FuelTypeDiesel + 1112 * FuelTypePetrol + 60.89 * HP + 330.5 * Automatic - 4.168 * CC + 19.94 * Weight. This means that:
+  
+ - the value of intercept equals -3718. That is the estimated value of a car that would have value 0 for all of the parameters. In this case it is purely theoretical and has no meaningful interpretation.
+ - For each year of car use, its value decreases by 122.1. It also decreases by ~0.016 for every driven kilometer. For new cars, price would be lower by  4.168 for every cubic centimetres capacity of the engine.
+ - Value of the car increases by 3388 for Diesels, and by 1112 for Petrol ones, meaning Diesel ones are more expensive by default. Moreover value of the car increases by 60.89 for every HP of engine, and by 19.94 for every kg of weight. Also, car that is Automatic increases value by 330.5.
+
+
+### Goodness of fit - Adj. R2
+
+  To asses model accuracy, R-squared value can be used. However, it will always increase when more variables are added to the model, even if those variables are only weakly associated with the response.
+  
+  In this case to models to compare have different number of predictors, therefore another measure, Adjusted R Square, is used to measure and compare their goodness, as it is adjusted to the number of used parameters.
+  
+  For model m1, value of Adjusted R Squared equals 0.8684, which means that the model explains ~87% of variance when predicting value of the car. Model m2 is s, as for the same parameter has value 0.8685.
+  
+   Large proportion of the variability in the response has been explained by the regression.
+
+
+### Goodness of fit - RSE
+
+  Other measure of the quality of the model is RSE/sigma (Residual Standard Error), which is the measure of level of prediction. 
+  
+  It is the measure of standard deviation of residual, meaning the average distance between prediction and actual value. Divided by mean value of predicted variable, error rate (relative error) is received.
+  
+  For m1 and m2 those are respectively 0.1226107 and 0.1225507, which means that both models have ~13% error rate, with m2 being slightly more accurate again.
+
+  
+```{r}
+rse1 <- sigma(m1)/mean(ToyotaCorolla$Price)
+rse1
+
+rse2 <- sigma(m2)/mean(ToyotaCorolla$Price)
+rse2
+```
+
+<!-- 
+Czy ja tutaj dobrze rozumiem co liczé? Czy sigma to jest faktycznie RSE, i czy dzielenie jej przez Sredniá da blad wzgledny, a wiec ten percentage error?` -> to chyba dobrze
+
+
+Czy dobra nazwa ze relative error?
+--> 
+
+
+### Model quality - residuals analysis
+
+  In order for the model not to be biased, residual need to have a zero average. In case of model m2, the average is equal to 6.925008e-14, which is essentialy zero.
+  
+```{r}
+mean(residuals(m2))
+```  
+  
+  Errors must also be uniformly distributed. As can be seen by the histogram and density plot below, they are normally distributed. 
+
+<!-- 
+WHAT IN THIS CASE ?!?!? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+And later in Q-Q plot we check if errors are normally distributed.... SO WHICH DISTRIBUTION SHOULD IT BE?
+--> 
+
+```{r}
+hist(residuals(m2))
+plot(density(residuals(m2)))
+```
+
+### Model quality - plots analysis: visual verification
+
+**1) Residuals vs fitted values**
+
+  On the plot below, small number of outliers can be seen, however for most of the fitted values, their residuals oscillate symmetrically around the curve close to 0.
+
+```{r}
+plot(m2, which = 1)
+```
+
+**2) Normal Q-Q**
+
+  This plot illustrates whether errors are normally distributed (in which case they should form a straight line). In this case it is true for most of the values except a couple of outliers.
+  Shape of the curve suggests that errors distributions has *fatter tails*, meaning compared to the normal distribution there is more data located at the extremes of the distribution and less data in the center of the distribution. In terms of quantiles this means that the first quantile is much less than the first theoretical quantile and the last quantile is greater than the last theoretical quantile.
+
+```{r}
+plot(m2, which = 2)
+```
+
+**3) Scale-Location**
+
+  Based on the scale-location plot, we can verify that red line is roughly horizontal, meaning the assumption of homoscedasticity is likely satisfied for a given regression model (spread od residuals is roughly equal for all fitted values).
+  
+  There is no pattern among residuals, they are randomly scattered around the red line with roughly equal variability at all fitted values. (Although more points can be seen to the left of the plot, it corresponds to the skew in Price data, not residuals themselves.)
+
+```{r}
+plot(m2, which = 3)
+```
+
+**4) Cook’s distance**
+
+  The last plot shows which points have the greatest influence on the regression (leverage points). In this case those are point 110, 222 and 961.
+
+```{r}
+plot(m2, which = 4)
+```
+
+  They have great influence on the model, can be detected as outliers, therefore removing these points should increase quality of the model.
+
+```{r}
+# https://www.statology.org/how-to-identify-influential-data-points-using-cooks-distance/
+
+#find Cook's distance for each observation in the dataset
+cooksD <- cooks.distance(m2)
+
+#identify influential points (traditional threshold 4/n, here value from the graph used -> biggest 3 outliers)
+influential_obs <- as.numeric(names(cooksD)[(cooksD >= cooksD[109])])
+
+#define new data frame with influential points removed
+outliers_removed <- ToyotaCorolla[-influential_obs, ]
+
+head(outliers_removed)
+
+m2_or <- lm(Price ~. -Doors -MetColor , data = outliers_removed)
+
+summary(m2_or)
+
+plot(m2_or, which = 4)
+
+rse2_or <- sigma(m2_or)/mean(outliers_removed$Price)
+rse2_or
+```
+
+  As can be see, removing that 3 values had increased Adjusted R Squared from 0.8685 to 0.9366, which means model explains now about 6% more od the variance in predicted values. Also error rate has decreased from ~13% to ~7%.
+  
+  This is a huge improvement, that as can be seen by new Cook's distance graph might be even increased by removing more outliers. However for now, this one will be used in further analysis replacing m2.
+  
+```{r}
+m2 <- m2_or
+```
+
+
+
+# Exercise II
+> **ToDo:**
+>
+ - With the ToyotaCorolla dataset, build two polynomial and orthogonal models, and call them m3 and m4.
+ - Repeat the analysis made for m1 and m2. Also, analyze the significancy of the regression coefficients.
+ 
+ 
+ ## Selection of nonlinear dependent variables
+ 
+ In order to find non-linear dependent variables, multiple scatter plots were generated.
+ 
+<!-- 
+Yyyy, ale czy to na pewno nie jest linear regression? -> patrz 3.3. non-linear regression jest wymineniona jako osobny punkt od polynomial and orthogonal.
+--> 
+ 
+ 
+```{r}
+plot(ToyotaCorolla$Age, ToyotaCorolla$Price)
+plot(ToyotaCorolla$KM, ToyotaCorolla$Price)
+plot(ToyotaCorolla$HP, ToyotaCorolla$Price)
+plot(ToyotaCorolla$CC, ToyotaCorolla$Price)
+plot(ToyotaCorolla$Weight, ToyotaCorolla$Price)
+```
+
+Based on this plots followink relationships can be observed:
+ 
+ - Age has rather linear influence on the price, slightly exponential
+ - KM have exponential effect on Price
+ - Both HP and CC are more categorical, and for each category Price comes from specific range. To fit a curve through those lines polynomial could be used. For HP of 3rd degree and for CC of 3rd or 4th degree.
+ - For weight, it is hard to observe any pattern, especially due to outliers of very hight weight.
+ 
+  Based on above observations, polynomial aspect will be added to Age, 3rd degree to HP and 3rd to CC.
+
+<!-- 
+What is the difference between orthogonal and polynomial?
+--> 
+
+## Polynomial model creation and analysis
+
+After examining multiple models, best one was recived for removing of Weigt term and addition of terms: I(CC^2), I(CC^3), I(Age^2), I(Weight^2).
+
+```{r}
+m3 <- update(m2,  ~. +I(KM^2) +I(KM^3))
+
+summary(m3)
+rse3 <- sigma(m3)/mean(outliers_removed$Price)
+rse3
+```
+
+```{r}
+m3 <- update(m2,  ~. +I(Age^2))
+
+summary(m3)
+rse3 <- sigma(m3)/mean(outliers_removed$Price)
+rse3
+```
+
+```{r}
+m3 <- update(m2,  ~. +I(CC^2) +I(CC^3))
+
+summary(m3)
+rse3 <- sigma(m3)/mean(outliers_removed$Price)
+rse3
+```
+
+```{r}
+m3 <- update(m2,  ~. +I(CC^2) +I(CC^3) + I(Age^2))
+
+summary(m3)
+rse3 <- sigma(m3)/mean(outliers_removed$Price)
+rse3
+```
+
+```{r}
+m3 <- update(m3,  ~. -Weight +I(Weight^2))
+
+summary(m3)
+rse3 <- sigma(m3)/mean(outliers_removed$Price)
+rse3
+```
+
+**Model m3** is based on m2, meaning data with removed outliers, and it's formula is as follows:
+
+$Price = Age + KM + FuelType + HP + Automatic + CC + I(CC^2) + I(CC^3) + I(Age^2) + I(Weight^2)$
+
+Model has **Adj. R^2** value of 0.9389, meaning it predicts **~94%** od variability in outcome data, and has only **~6.5% error rate**.
+
+```{r}
+mean(residuals(m3))
+hist(residuals(m3))
+plot(density(residuals(m3)))
+```
+
+There is no bias in the model as errors mean equals 0 and they are normally distributed.
+<!-- 
+Właśnie, normally not uniformly
+--> 
+
+**1) Residuals vs fitted values**
+
+In comparison to m2, number of outliers is smaller and residuals even better oscillate symmetrically around the 0 curve.
+
+```{r}
+plot(m3, which = 1)
+```
+
+**2) Normal Q-Q**
+
+  Comparing to model m2, errors are better distributed, closer to normal distribution. There was a change in a way how they differ from gaussian distribution. Now distribution has *thin tails*, meaning the first quantiles are occurring at larger than expected values and the last quantiles are occurring at less than expected values.  
+
+```{r}
+plot(m3, which = 2)
+```
+
+**3) Scale-Location**
+
+  Residuals are more randomly scattered in comparison to model m2, however red line seems to be less horizontal, meaning less satisfied assumption of homoscedasticity. However, this preception might be the result of more zoomed plot than before.
+
+```{r}
+plot(m3, which = 3)
+```
+
+**4) Cook’s distance**
+
+  New leverage points of great influence were detected: 186, 383, 1048. Their removal may improve the quality of prediction.
+
+```{r}
+plot(m3, which = 4)
+```
+
+<!-- 
+
+```{r}
+#find Cook's distance for each observation in the dataset
+cooksD <- cooks.distance(m3)
+head(cooksD)
+head(names(cooksD))
+cooksD["7"]
+cooksD[7]
+
+#identify influential points (traditional threshold 4/n, here value from the graph used -> biggest 3 outliers)
+influential_obs <- as.numeric(names(cooksD)[(cooksD >= cooksD["186"])])
+influential_obs
+
+#define new data frame with influential points removed
+outliers_removed <- outliers_removed[-influential_obs, ]
+
+head(outliers_removed)
+
+m3_or <- lm(Price ~. -Doors -MetColor , data = outliers_removed)
+
+summary(m3_or)
+
+plot(m3_or, which = 4)
+
+rse3_or <- sigma(m3_or)/mean(outliers_removed$Price)
+rse3_or
+```
+
+--> 
+
+
+## Polynomial orthogonal model
+
+  Model m4 was constructed in a similar way to model m3, but for orthogonal polynomials. The only found meaningful combination was for the modification of m2 model, with following formula:
+  
+$Price = Age + KM + FuelType + HP + Automatic + CC + poly(Weight, 2)$
+
+```{r}
+m4 <- update(m2,  ~. -Weight +poly(Weight, 2))
+
+summary(m4)
+rse4 <- sigma(m4)/mean(outliers_removed$Price)
+rse4
+```
+
+New model m4 has **Adj. R^2** value of 0.9368, meaning it predicts **~94%** od variability in outcome data, and has **~6.6% error rate**, which means that it is less accurate than m3.
+
+```{r}
+mean(residuals(m4))
+hist(residuals(m4))
+plot(density(residuals(m4)))
+```
+
+Again, there is no bias in the model as errors mean equals 0 and residuals are normally distributed.
+
+<!-- 
+Właśnie, normally not uniformly
+--> 
+
+**1) Residuals vs fitted values**
+
+Like in m3, number of outliers is smaller than m2 and residuals better oscillate symmetrically around the 0 curve, although worse than in m3.
+
+```{r}
+plot(m4, which = 1)
+```
+
+**2) Normal Q-Q**
+
+  Same as in m3, errors are almost normally distributed, with the distribution being more "pointy" than normal one.  
+
+```{r}
+plot(m4, which = 2)
+```
+
+**3) Scale-Location**
+
+  Residuals are more randomly scattered in comparison to model m2, and red line seems to be more horizontal than m3, meaning assumption of homoscedasticity may be better satisfied.
+
+```{r}
+plot(m4, which = 3)
+```
+
+**4) Cook’s distance**
+
+  New leverage points of great influence were detected, most importantly 9th one. It is very distinct from other ones in this distribution, and also in comparison to m3 cook's distances. This may mean that it is highly influenced by the weight.
+
+```{r}
+plot(m4, which = 4)
+```
+
+
+# Exercise III
+> **ToDo:**
+>
+- Compare all the models built for ToyotaCorolla using ANOVA and explain the results.
+
+anova(m1, m2, m3, m4)
+
+<!-- 
+What about this?!?!?! :
+
+  Using anova, we can compare situations, where one model extends the other one. In this case can following sets of models can be compared: (m1 with m2 with m3), (m1 with m2 with m4).
+  
+??? or as m2 has smaller number of arguments than m1... m2 with m1, m2 with m3 and m2 with m4... but can I if i have removed weight argument?
+
+
+CZY JA NA PEWNO MUSIALEM TO PRZELICZAC NA NOWO, CZY TE WARTOSCI MUSZA SIE POKRYWAC? CZY MNIE W ZASADZIE OBCHODZI TYLKO TO ZEBY JEDEN MODEL MIAL ICH WIECEJ?
+--> 
+
+  Anova method can be used when one model extends another one. In the process of constructing the models, not only new parameters were added, but also data set changed. Therefore, below simplified versions of previous models were retrained for the purpose of comparison.
+  
+  Of course, this does not reflect comparisons between original models. However, in reality, comparison wouldn't be necessary because in this case model with smaller number of variables is better. Therefore the only importance is to compare m2 with m3 and m4, but this requires adding weight to m3 and m4 or removing it from m2.
+  
+```{r}
+m1t <- lm(Price ~. , data = outliers_removed)
+
+m2t <- lm(Price ~. -Doors -MetColor  , data = outliers_removed)
+
+m3t <- update(m2t,  ~. +I(CC^2) +I(CC^3) + I(Age^2) +I(Weight^2))
+
+m4t <- update(m2t,  ~. +poly(Weight, 2))
+```
+
+
+```{r}
+anova(m2t, m1t)
+
+anova(m2t, m3t)
+
+anova(m2t, m4t)
+```
+
+  The parameter Pr(>F) is the probability, that rejecting null hypothesis (the most complex model does not fit better than the simplest model) could be an error. Therefore if the resulting p-value is sufficiently low (usually less than 0.05), we conclude that the more complex model is significantly better than the simpler model, and thus favor the more complex model.
+  
+  In this case, p-value in all tests was lower than 0.05, meaning m2t model was significantly worse from all other models.
+  
+```{r}
+anova(m1t, m3t)
+anova(m3t, m1t)
+```
+
+```{r}
+anova(m1t, m4t)
+anova(m4t, m1t)
+```
+
+
+```{r}
+anova(m4t, m3t)
+anova(m3t, m4t)
+```
+
+<!-- 
+Jak to interpretować ?!?!? Każdy test jestdobry ?!?!? Czy one wgl działają?
+--> 
+
