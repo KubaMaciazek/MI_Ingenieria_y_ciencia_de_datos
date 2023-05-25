@@ -1,0 +1,673 @@
+---
+title: "Estadística avanzada para ciencia de datos"
+description: |
+  Realization of a project for the topic.
+author:
+  #"Jakub Maciążek"
+  name: "Jakub Maciążek </br>"
+  affiliation: Faculty of Information and Communication Technology, Wrocław University of Science and Technology
+subtitle: "Estadística bayesiana - Proyecto de Contrastes, Regresión e Inferencia Bayesiana"
+output:
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+  pdf_document:   
+    latex_engine: xelatex   # added to knit to pdf 
+  html_document: default    # added to knit to html 
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(readr)
+library (dplyr)
+library(corrplot)
+
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+```
+
+# Project description
+
+> **Introduction**
+>
+  We will explore a dataset of volumetric brain measurements of a number of individuals, which fall into two groups (according to the variable CLASS): the value HEALTHY indicates a healthy individual, while the value AD indicates Alzheimer’s disease (AD stands for Alzheimer’s Disease).
+>
+  These data come from calculating around 230 morphometric estimates (volume and thickness of anatomical brain regions) of some 260 individuals, belonging to the OASIS project.
+
+**Objective**
+
+The purpose of this project is to use the advanced statistical techniques seen in class to:
+
+ - Establish the existing relationship between volumetric variables and the age and sex of each individual.
+ - Discover markers among volumetric measures of cognitive status (healthy, Alzheimer’s)
+ - Generate a classifier model of cognitive status to predict, from the volumetric variables, whether an individual has Alzheimer’s or is healthy.
+ - Conduct a small Bayesian analysis of the epidemiology/incidence of Alzheimer’s disease.
+ 
+ 
+# Dataset analysis
+
+  Analysis was started with overview of the dataset. Alzheimer.csv contains 262 records of individual patients. Each record has specified 228 properties. Two of them are of categorical type:
+  
+- SEX (MALE, FEMALE): gender of a patient.
+- CLASS (HEALTHY, AD): health status of a patient, meaning healthy or with Alzheimer's disease.
+
+Remaining 226 variables are of type double and describe all except one (AGE - age of patient) describe different brain parameters.
+
+```{r}
+Alzheimer <- read_csv("Alzheimer.csv")
+head(Alzheimer)
+```
+
+**Brief descriptive statistic of dataset population**
+
+  Dataset contains information for people over 50 years old. They are not equally represented by age. There is especially small representation for people over 90 years old. Both genders are fairly equally represented. Most of the data corresponds to healthy individuals, with only ~35 records corresponding to people with Alzheimer's disease.
+
+```{r}
+par(mfrow=c(1,3))
+barplot(table(Alzheimer$SEX))
+barplot(table(Alzheimer$CLASS))
+hist(Alzheimer$AGE)
+```
+
+# Hypothesis testing
+
+  The aim is to establish markers or indicators of an individual’s condition. Basically, we want to test whether brain atrophy is specific to Alzheimer’s disease, compared to healthy subjects.
+  
+  Those tests will be conducted for general brain volume, as well as white and gray matter. Also, independence of health status from gender will be studied.
+
+## Test I: BRAIN_VOLUME & CLASS
+
+  In the first test it was be examined, whether brain atrophy (loss of neurons/capacity/volume) is specific to Alzheimer's disease. In order to do that, it was tested whether mean brain volume is significantly lower for sick individuals. Independent Welsh T-test was conducted, as samples are independent and variances unknown.
+
+  First test results with *p-value* of 0.445. It means, that in general mean of brain volume for sick individuals does not significantly differ from healthy ones. It can be also observed on the boxplots comparison, where can be seen that IQR ranges and means are almost the same
+  
+```{r}
+t.test(Alzheimer$BRAIN_VOLUME ~ Alzheimer$CLASS, alternative="less")
+
+boxplot(BRAIN_VOLUME~CLASS, data=Alzheimer)
+```
+
+  Result does not differ for groups distincted by gender, and there is no significant difference neither for men nor woman. Again, also on the boxplots it can be seen that means are almost equal.
+  
+  *Therefore, brain volume does not indicate individual's condition.*
+
+```{r}
+Male_Alzheimer <- filter(Alzheimer, SEX == "MALE")
+#head(Male_Alzheimer)
+Female_Alzheimer <- filter(Alzheimer, SEX == "FEMALE")
+#head(Female_Alzheimer)
+
+t.test(Male_Alzheimer$BRAIN_VOLUME ~ Male_Alzheimer$CLASS, alternative="less")
+t.test(Female_Alzheimer$BRAIN_VOLUME ~ Female_Alzheimer$CLASS, alternative="less")
+
+par(mfrow=c(1,2))
+boxplot(BRAIN_VOLUME~CLASS, data=Male_Alzheimer, main="Male")
+boxplot(BRAIN_VOLUME~CLASS, data=Female_Alzheimer, main="Female")
+```
+
+
+**T-tests basic assumptions**
+
+  In order to conduct the tests, compared samples need to come from normal distribution. This was checked with Shapiro-Wilk test. Equality of variances was not tested, therefore Welsh t-test was used.
+
+  In the test, null hypothesis states that *"sample distribution is normal"*. Therefore, if *p-value* of the test is greater than 0.05, sample distribution does not significantly differ from normal distribution.
+  
+  From below results, it can be seen that samples pass tests in all cases, exceplt healthy samples for general and woman population. 
+
+```{r}
+# Normal distibution of brain volume by health status.
+
+AD_Alzheimer <- filter(Alzheimer, CLASS == "AD")
+H_Alzheimer <- filter(Alzheimer, CLASS == "HEALTHY")
+
+shapiro.test(AD_Alzheimer$BRAIN_VOLUME)
+shapiro.test(H_Alzheimer$BRAIN_VOLUME)
+
+# Normal distibution of brain volume by health status among different genders.
+
+MAD_Alzheimer <- filter(Male_Alzheimer, CLASS == "AD")
+MH_Alzheimer <- filter(Male_Alzheimer, CLASS == "HEALTHY")
+
+shapiro.test(MAD_Alzheimer$BRAIN_VOLUME)
+shapiro.test(MH_Alzheimer$BRAIN_VOLUME)
+
+FAD_Alzheimer <- filter(Female_Alzheimer, CLASS == "AD")
+FH_Alzheimer <- filter(Female_Alzheimer, CLASS == "HEALTHY")
+
+shapiro.test(FAD_Alzheimer$BRAIN_VOLUME)
+shapiro.test(FH_Alzheimer$BRAIN_VOLUME)
+```
+
+  From below plots it can be seen that the problem is related to samples that have more than 50 observations, and data seem to mor or less follow the distribution. Therefore it was assumed that lack of normality will not affect test result significantly.
+  <span style="color: red;">**Correct thinking? Or should I have done sth else?**</span>
+<!-- Note that, if the data are not normally distributed, it’s recommended to use the non parametric two-samples Wilcoxon rank test.
+http://www.sthda.com/english/wiki/unpaired-two-samples-t-test-in-r -->
+
+```{r}
+par(mfrow=c(1,2))
+hist(H_Alzheimer$BRAIN_VOLUME)
+hist(FH_Alzheimer$BRAIN_VOLUME)
+```
+
+  
+
+## Test II: GM_VOLUME & CLASS
+
+  Tests for Grey matter were conducted with alike assumptions. For general population *p-value* of 0.08233 was received. It is close to usual significance level of 0.05, but still suggests that mean grey matter volume is not significantly lower for sick individuals. At the following boxplots it can be confirmed, that means and general ranges are very similar, with only IQR ranges being slightly different.
+  
+```{r}
+t.test(Alzheimer$GM_VOLUME ~ Alzheimer$CLASS, alternative="less")
+
+boxplot(GM_VOLUME~CLASS, data=Alzheimer)
+```
+
+  For man subgroup, test *p-value* of 0.2781 means results alike to general population. However, female subgroup with test "p-value" of 0.04279 (lower than significance level of 0.05) means that mean brain grey matter volume for sick woman is significantly lower than for healthy ones.
+  
+  *Therefore grey matter volume can be used as disease indicator for woman.*
+  
+  However, in men's boxplot huge difference in means is observed, which together with close p-value for general population can mean that gray matter may be a correct indicator for general population.
+  <span style="color: red;">**Correct?**</span>
+  
+```{r}
+t.test(Male_Alzheimer$GM_VOLUME ~ Male_Alzheimer$CLASS, alternative="less")
+t.test(Female_Alzheimer$GM_VOLUME ~ Female_Alzheimer$CLASS, alternative="less")
+
+par(mfrow=c(1,2))
+boxplot(GM_VOLUME~CLASS, data=Male_Alzheimer, main="Male")
+boxplot(GM_VOLUME~CLASS, data=Female_Alzheimer, main="Female")
+```
+
+**T-tests basic assumptions**
+
+  Again, in al cases except health females, p-value is greater than *0.05* indicating that sample distribution does not significantly differ from normal one.
+<span style="color: red;">**What about these woman?**</span>
+
+```{r}
+# Normal distibution of brain gray matter volume by health status.
+shapiro.test(AD_Alzheimer$GM_VOLUME)
+shapiro.test(H_Alzheimer$GM_VOLUME)
+
+# Normal distibution of brain gray matter volume by health status among different genders.
+shapiro.test(MAD_Alzheimer$GM_VOLUME)
+shapiro.test(MH_Alzheimer$GM_VOLUME)
+
+shapiro.test(FAD_Alzheimer$GM_VOLUME)
+shapiro.test(FH_Alzheimer$GM_VOLUME)
+```
+
+
+## Test III: WM_VOLUME & CLASS
+
+  Neither for whole population, nor for those samples divided by gender, mean brain white matter volume is significantly smaller for sick individuals.
+
+```{r}
+t.test(Alzheimer$WM_VOLUME ~ Alzheimer$CLASS, alternative="less")
+
+boxplot(WM_VOLUME~CLASS, data=Alzheimer)
+```
+  
+  Moreover, even though on boxplots can be seen IQR ranges differ for health groups when divided by gender, their mean value is very similar. 
+  
+  
+*White matter volume can not be used as health indicator.*
+
+```{r}
+t.test(Male_Alzheimer$WM_VOLUME ~ Male_Alzheimer$CLASS, alternative="less")
+t.test(Female_Alzheimer$WM_VOLUME ~ Female_Alzheimer$CLASS, alternative="less")
+
+par(mfrow=c(1,2))
+boxplot(WM_VOLUME~CLASS, data=Male_Alzheimer, main="Male")
+boxplot(WM_VOLUME~CLASS, data=Female_Alzheimer, main="Female")
+```
+
+
+**T-tests basic assumptions**
+
+  Samples divided by genders follow normal distribution, however general ones differ from it, especially sample of healthy individuals differ very much with p-value of *5.47e-06*.
+  <span style="color: red;">**So, what to do with that?**</span>
+
+```{r}
+# Normal distibution of brain gray matter volume by health status.
+shapiro.test(AD_Alzheimer$WM_VOLUME)
+shapiro.test(H_Alzheimer$WM_VOLUME)
+
+# Normal distibution of brain gray matter volume by health status among different genders.
+shapiro.test(MAD_Alzheimer$WM_VOLUME)
+shapiro.test(MH_Alzheimer$WM_VOLUME)
+
+shapiro.test(FAD_Alzheimer$WM_VOLUME)
+shapiro.test(FH_Alzheimer$WM_VOLUME)
+```
+
+
+## Test IV: SEX & CLASS independence
+<!-- 
+http://www.sthda.com/english/wiki/chi-square-test-of-independence-in-r 
+https://data-flair.training/blogs/chi-square-test-in-r/
+-->
+
+  Based on a test *p-value* greater than significance level of 0.05, we cannot reject null hypothesis, which states that variables are independent and not correlated.
+
+```{r}
+chisq.test(Alzheimer$SEX, Alzheimer$CLASS)
+```
+
+
+# Regression
+
+  We are considering establishing a pattern of annual (i.e. age-dependent) atrophy in the brain. How does the volume of the brain vary with age? Does it depend on sex? To answer those questions 3 regression models predicting different brain volumes were constructed.
+  
+  On the other hand, we want to know whether the volumetric parameters of the brain are good indicators of age. To solve this question, next 3 reversal models where constructed.
+  
+  
+## Brain volume ~ age & sex regression model
+
+> We want to establish a regression model that uses as predictors the variables sex and age to estimate the value of brain volume (variable BRAIN_VOLUME). Use simple linear and polynomial regression and compare the models using anova(), detecting if all variables are significant and commenting and interpreting the known goodness-of-fit and error measures.
+
+  Starting with the visual analysis, it can be observed that on average man have higher brain volume. However, no more patterns are detected, therefore regression will be most likely inaccurate. 
+
+```{r}
+ggplot(data = Alzheimer, aes(x=AGE, y=BRAIN_VOLUME)) + geom_point(aes(colour=SEX))
+```
+
+**Simple linear model**
+
+  Based on the *Pr(>|t|)* value, it can be observed that AGE is an insignificant factor for any of the below models.
+
+```{r}
+m1 <- lm(BRAIN_VOLUME ~ AGE, data = Alzheimer)
+summary(m1)
+
+m2 <- lm(BRAIN_VOLUME ~ SEX, data = Alzheimer)
+summary(m2)
+
+m3 <- lm(BRAIN_VOLUME ~ SEX + AGE, data = Alzheimer)
+summary(m3)
+```
+
+  As AGE is insignificant, for later analysis *m2* model will be used with following equation:
+  
+  $ BRAIN_VOLUME = 1337.510 + 203.949*SEXMALE $
+  
+  This means that on average, woman have brain volume of 1337.510, and man 203.949 higher.
+  
+  Above model explains about ~47% of variance of predicted volume and has ~7% error rate.
+  
+```{r}
+rse2 <- sigma(m2)/mean(Alzheimer$BRAIN_VOLUME)
+rse2
+```
+
+  Residuals do not grow for higher values and are fairly normally distributed, which satisfies regression assumptions.
+
+```{r}
+par(mfrow=c(1,2))
+plot(m2, which=1:2)
+```
+
+
+**Polynomial model**
+
+  For test of different values of polynomials, none of them returned a model with significant value of *AGE*. Best one was below one.
+
+```{r}
+m4 <- lm(BRAIN_VOLUME ~ SEX + I(AGE^2), data = Alzheimer)
+summary(m4)
+```
+
+**Models comparison**
+
+  Anova test returned value of *0.2113* which is higher than significance level of 0.05, confirming that more complex model is not better enough.
+
+```{r}
+anova(m2, m4)
+```
+
+
+
+## Gray matter ~ age & sex regression model
+
+  Initial visual analysis raises similar conclusions to those from the previous point.
+
+```{r}
+ggplot(data = Alzheimer, aes(x=AGE, y=GM_VOLUME)) + geom_point(aes(colour=SEX))
+
+par(mfrow=c(1,2))
+plot(Male_Alzheimer$AGE, Male_Alzheimer$GM_VOLUME)
+plot(Female_Alzheimer$AGE, Female_Alzheimer$GM_VOLUME)
+```
+
+**Simple linear model**
+
+  Despite similar assumptions based on visual analysis, in contrast to the previous analysis, in this case both variables are significant. Therefore the best one is model m3.
+
+```{r}
+m1 <- lm(GM_VOLUME ~ AGE, data = Alzheimer)
+summary(m1)
+
+m2 <- lm(GM_VOLUME ~ SEX, data = Alzheimer)
+summary(m2)
+
+m3 <- lm(GM_VOLUME ~ SEX + AGE, data = Alzheimer)
+summary(m3)
+```
+
+  Model m3 explains ~27% of variance in the predicted value and has ~9% error rate. Moreover, it seems to satisfy regression assumptions, as error is mostly constant and close to 0 for all values, and residuals seem to follow normal distribution.
+
+```{r}
+rse3 <- sigma(m3)/mean(Alzheimer$GM_VOLUME)
+rse3
+
+par(mfrow=c(1,2))
+plot(m3, which=1:2)
+```
+
+**Polynomial model**
+
+  When constructing a polynomial model, additional polynomials of age were added. For polynomials over 2, AGE variable was loosing significance. Therefore below model was choosen as the best.
+
+```{r}
+m4 <- lm(GM_VOLUME ~ SEX + AGE + I(AGE^2), data = Alzheimer)
+summary(m4)
+```
+
+  Model m4 explains ~28% of variance of explained variable, and has ~9% error rate. It also ssems to satisfy regression assumptions.
+
+```{r}
+rse4 <- sigma(m4)/mean(Alzheimer$GM_VOLUME)
+rse4
+
+par(mfrow=c(1,2))
+plot(m4, which=1:2)
+```
+
+**Models comparison**
+
+  Value of *Pr(>F)* for anova test is equal to 0.01073, which is lower than significance level. Therefore it can be said that polynomial model m4 is significantly better than model m3.
+
+```{r}
+anova(m3, m4)
+```
+
+
+## White matter ~ age & sex regression model
+
+  Initial visual analysis raise similar conclusions to those from previous points.
+
+```{r}
+ggplot(data = Alzheimer, aes(x=AGE, y=WM_VOLUME)) + geom_point(aes(colour=SEX))
+
+par(mfrow=c(1,2))
+plot(Male_Alzheimer$AGE, Male_Alzheimer$WM_VOLUME)
+plot(Female_Alzheimer$AGE, Female_Alzheimer$WM_VOLUME)
+```
+
+**Simple linear model**
+
+  Like in previous analysis, both variables are significant, making model m3 the best one.
+
+```{r}
+m1 <- lm(WM_VOLUME ~ AGE, data = Alzheimer)
+summary(m1)
+
+m2 <- lm(WM_VOLUME ~ SEX, data = Alzheimer)
+summary(m2)
+
+m3 <- lm(WM_VOLUME ~ SEX + AGE, data = Alzheimer)
+summary(m3)
+```
+
+  Obtained model m3 explains ~41% of variance of predicted value and has ~9% error rate. <span style="color: red;">**Czy ja dobrze licze ten error rate?!?!**</span> Moreover, model seems to satisfy regression assumptions of normality of residuals deistribution and homoscedasticity.
+
+```{r}
+rse3 <- sigma(m3)/mean(Alzheimer$WM_VOLUME)
+rse3
+
+par(mfrow=c(1,2))
+plot(m3, which=1:2)
+```
+
+**Polynomial model**
+
+  Addition of a polynomial to the previous model makes AGE loose significance and R-square quality. Therefore model m4 is worse than m3, and it is unnesecssary to compare them with anova.
+
+```{r}
+m4 <- lm(WM_VOLUME ~ SEX + AGE + I(AGE^2), data = Alzheimer)
+summary(m4)
+```
+
+
+## Age ~ brain volume & gray/white matter & sex regression model
+
+  In order to create model for Age prediction, visual analysis was conducted again. However, no clear patterns were observed (besides average difference by sex).
+
+```{r}
+ggplot(data = Alzheimer, aes(x=BRAIN_VOLUME, y=AGE)) + geom_point(aes(colour=SEX))
+ggplot(data = Alzheimer, aes(x=GM_VOLUME, y=AGE)) + geom_point(aes(colour=SEX))
+ggplot(data = Alzheimer, aes(x=WM_VOLUME, y=AGE)) + geom_point(aes(colour=SEX))
+```
+
+  Due to the lack of obvious relationship, 1st model was constructed containing all discussed variables. It explained ~20% of variance in predicted variable and had ~9% error rate. Model satisfied regression assumptions, though it had a little pattern of growwing residuals for extreme values.
+
+```{r}
+m1 <- lm(AGE ~ BRAIN_VOLUME + GM_VOLUME + WM_VOLUME + SEX, data = Alzheimer)
+summary(m1)
+
+rse1 <- sigma(m1)/mean(Alzheimer$AGE)
+rse1
+
+par(mfrow=c(1,2))
+plot(m1, which=1:2)
+```
+
+  Based on *Pr(>|t|)* value in coefficients table of model m1, it can be seen that WM_VOLUME is insignificant. Therefore next constructed model m2 was constructed without it.
+  
+  Newly created model explained ~20% of variance in predicted variable and had ~9% error rate. Though it showed similar to m1 problems in distribution of residuals, it seems to satisfy regression assumptions.
+
+```{r}
+m2 <- lm(AGE ~ BRAIN_VOLUME + GM_VOLUME + SEX, data = Alzheimer)
+summary(m2)
+
+rse2 <- sigma(m2)/mean(Alzheimer$AGE)
+rse2
+
+par(mfrow=c(1,2))
+plot(m2, which=1:2)
+```
+
+  As in previous model, WM_VOLUME variable was removed, it was added again to 3rd model to check if its polynomial value would prove to be more significant.
+
+  Newly obtained model m3 explained ~20% of variance and had ~9% error rate. However, based on coefficients table and *Pr(>|t|)* value, it can be see that I(WM_VOLUME^2) once again is insignificant.
+
+```{r}
+m3 <- lm(AGE ~ BRAIN_VOLUME + GM_VOLUME + SEX + I(WM_VOLUME^2), data = Alzheimer)
+summary(m3)
+
+rse3 <- sigma(m3)/mean(Alzheimer$AGE)
+rse3
+
+par(mfrow=c(1,2))
+plot(m3, which=1:2)
+```
+
+**Models comparison**
+
+  Model m2 proofs the best one, as it contains only significant variables. It is confirmed to be better by anova tests as well as in both cases *Pr(>F)* value was greater than 0.05.
+
+```{r}
+anova(m2, m1)
+anova(m2, m3)
+```
+
+  Even though m2 is the best model, using all significant variable from given set, it still explains only 20% of variance in the predicted age. On the other hand, its predictions have only ~9% error rate.
+  
+  Therefore, it can be said that those volumetric parameters and sex, averagely good indicators of age.
+
+
+# Logistic regression and classification
+
+  We want to be able to decide, on the basis of the brain volumetry data we are looking at, whether a new subject may have Alzheimer’s disease. To do so, we will build logistic regression and classification models to solve this problem.
+  
+  We begin with the split of the dataset into a training set with 80% of the data, randomly selected, and the remaining 20% to validate the models.
+
+```{r}
+# Adding a binary variable indicating whether or not individual is healthy
+Alzheimer$IS_HEALTHY <- Alzheimer$CLASS == "HEALTHY"
+head(Alzheimer)
+
+# Data split (80% training, 20% validation)
+training_sample_size <- floor(0.8*nrow(Alzheimer))
+set.seed(12345)
+selected <- sample(seq_len(nrow(Alzheimer)), size = training_sample_size)
+
+Training_Alzheimer <- Alzheimer[selected, ]
+Testing_Alzheimer <- Alzheimer[-selected, ]
+```
+
+
+**Model generation**
+
+  Having data split, next step is to create a logistic regression model based on significant variables from training dataset. Based on *Pr(>|z|)* value from coefficients table, it can be seen that SEX variable is insignificant. Therefore new model that excludes it will be trained.
+  
+```{r}
+m1 <- glm(formula = IS_HEALTHY ~ BRAIN_VOLUME + GM_VOLUME + WM_VOLUME + SEX + AGE, family = binomial, data = Training_Alzheimer)
+#m1
+summary(m1)
+```
+
+  In the next generated model, value of *Pr(>|z|)* for variables WM_VOLUME and AGE is again over, significance level of 0.05, therefore next model will wxclude them.
+
+```{r}
+m2 <- glm(formula = IS_HEALTHY ~ BRAIN_VOLUME + GM_VOLUME + WM_VOLUME + AGE, family = binomial, data = Training_Alzheimer)
+
+summary(m2)
+```
+
+  Last obtained model cotains only significant variables.
+
+```{r}
+m3 <- glm(formula = IS_HEALTHY ~ BRAIN_VOLUME + GM_VOLUME, family = binomial, data = Training_Alzheimer)
+
+summary(m3)
+```
+
+
+**Model validation**
+
+> How accurate is this model if we run it (using predict()) on the validation set?
+
+<!-- http://www.sthda.com/english/articles/36-classification-methods-essentials/151-logistic-regression-essentials-in-r/#assessing-model-accuracy -->
+
+  After compariosn of 3 models, it can be seen that the second one, even though contains variables with significance level over 0.05, has the highes accuracy of ~85%, with ~15% error rate.
+
+```{r}
+#m1
+
+#logit predictions
+logit.predictions <- predict(object = m1, newdata = Testing_Alzheimer)
+#inverse logit to transform to probabilities
+prob.predictions <- 1 / (1 + exp(-logit.predictions))
+  
+Testing_Alzheimer$PREDICTION_IS_HEALTHY <- prob.predictions >= 0.5
+
+accuracy <- mean(Testing_Alzheimer$PREDICTION_IS_HEALTHY == Testing_Alzheimer$IS_HEALTHY)
+error_rate <- 1-accuracy
+
+accuracy
+error_rate
+
+plot(prob.predictions, Testing_Alzheimer$IS_HEALTHY)
+
+#m2
+
+#logit predictions
+logit.predictions <- predict(object = m2, newdata = Testing_Alzheimer)
+#inverse logit to transform to probabilities
+prob.predictions <- 1 / (1 + exp(-logit.predictions))
+
+Testing_Alzheimer$prob.predictions <- prob.predictions
+Testing_Alzheimer$PREDICTION_IS_HEALTHY <- prob.predictions >= 0.5
+
+accuracy <- mean(Testing_Alzheimer$PREDICTION_IS_HEALTHY == Testing_Alzheimer$IS_HEALTHY)
+error_rate <- 1-accuracy
+
+accuracy
+error_rate
+
+plot(prob.predictions, Testing_Alzheimer$IS_HEALTHY)
+
+#m3
+
+#logit predictions
+logit.predictions <- predict(object = m3, newdata = Testing_Alzheimer)
+#inverse logit to transform to probabilities
+prob.predictions <- 1 / (1 + exp(-logit.predictions))
+  
+Testing_Alzheimer$PREDICTION_IS_HEALTHY <- prob.predictions >= 0.5
+
+accuracy <- mean(Testing_Alzheimer$PREDICTION_IS_HEALTHY == Testing_Alzheimer$IS_HEALTHY)
+error_rate <- 1-accuracy
+
+accuracy
+error_rate
+
+plot(prob.predictions, Testing_Alzheimer$IS_HEALTHY)
+
+```
+
+  However, looking at the plots of predictions vs real health status, it can be seen that in most cases sick individuals are also classifies as healthy ones. When calculating fals positive error rate for m2 model, it can be seen that it is only ~11% accurate and has ~89% false positive error rate.
+  
+  Moreover, it is impossible to improve predictions by adjusting probability threshold, because in most cases their predictions overlap in value with healthy ones.
+
+```{r}
+Sick_Testing_Alzheimer <- filter(Testing_Alzheimer, CLASS == "AD")
+
+logit.predictions <- predict(object = m2, newdata = Sick_Testing_Alzheimer)
+#inverse logit to transform to probabilities
+prob.predictions <- 1 / (1 + exp(-logit.predictions))
+
+Sick_Testing_Alzheimer$PREDICTION_IS_HEALTHY <- prob.predictions >= 0.5
+
+accuracy <- mean(Sick_Testing_Alzheimer$PREDICTION_IS_HEALTHY == Sick_Testing_Alzheimer$IS_HEALTHY)
+error_rate <- 1-accuracy
+
+accuracy
+error_rate
+
+plot(prob.predictions, Sick_Testing_Alzheimer$IS_HEALTHY)
+```
+
+ However, if correct predicition of sick status is more important, probability threshold can be adjusted for some value between the means of probabilities for health and sick characters. Such a model would prove over 50% accuracy for both cases.
+
+```{r}
+#m2
+
+#logit predictions
+logit.predictions <- predict(object = m2, newdata = Testing_Alzheimer)
+#inverse logit to transform to probabilities
+Testing_Alzheimer$prob.predictions <- 1 / (1 + exp(-logit.predictions))
+
+box_plot <- boxplot(prob.predictions~IS_HEALTHY, data=Testing_Alzheimer, main="Model m2")
+```
+
+  From below summary and the plot, it can be seen that first quantile for healthy individuals is similar to sick ones median value of probability. At the same time, third quantile of probabilities for sick characters is little below healthy ones median.
+  
+  This means, that if the threshold was adjusted to be sick ones median, accuracy ind detecting sick patients would rise to 50%, with false negative ration for healthy patients around 25%. To increase accuracy of detecting sick individuals to 75%, probability threshold set at 3rd quantile of sick ones probabilities, would also result in ~50% error rate for predicting healthy indyviduals.
+
+```{r}
+Summary<-box_plot$stats
+colnames(Summary)<-c("Sick","Healthy")
+rownames(Summary)<-c("Min","First Quartile","Median","Third Quartile","Maximum")
+Summary
+```
+
+# Inferencia Bayesiana
+
+<span style="color: red;">**ToDo: We want to make a study of the incidence of Alzheimer’s disease in the population, since it is estimated that, a priori, the incidence of Alzheimer’s disease in the population over 60 years of age is between 7% and 9%.**</span>
+
+
