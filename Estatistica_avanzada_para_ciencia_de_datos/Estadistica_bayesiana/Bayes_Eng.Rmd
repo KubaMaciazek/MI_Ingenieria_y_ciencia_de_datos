@@ -1,0 +1,479 @@
+---
+title: "Bayesian Statistics"
+description: |
+  A brief but comprehensive introduction to Bayesian Statistics.
+author:
+  - name: "[Domingo López Rodríguez](https://dominlopez.netlify.app), Ángel Mora, Manuel Ojeda </br>"
+    affiliation: Departamento de Matemática Aplicada, Universidad de Málaga
+subtitle: "Ingeniería y Ciencia de Datos I"
+output: 
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+```
+
+# Bayesian probability theorems
+
+If we recall the __conditional probability__:
+
+$$\mathbb{P}(A|B) = \frac{\mathbb{P}(A\cap B)}{\mathbb{P}(B)}$$
+we will be able to write:
+$$\mathbb{P}(A\cap B) = \mathbb{P}(A|B)\cdot \mathbb{P}(B)$$
+and, since $A\cap B = B\cap A$:
+$$\mathbb{P}(A\cap B) = \mathbb{P}(B|A)\cdot \mathbb{P}(A)$$
+This fact can be used to link $\mathbb{P}(A|B)$ and $\mathbb{P}(B|A)$:
+$$\mathbb{P}(A|B) = \frac{\mathbb{P}(B|A)\cdot \mathbb{P}(A)}{\mathbb{P}(B)}$$
+This result is known as __Bayes' theorem__.
+
+# Bayesian Inference
+
+When modelling a phenomenon, one uses parameters that describe the behaviour of the system.
+
+For example, in the toss of a coin a given number $n$ of times, knowing the number of times it comes up _face_ depends directly on a parameter which is the probability $p$ that the coin comes up heads in an isolated toss. In fact, the probability distribution of the number of heads in those $n$ flips is a binomial $B(n, p)$. Knowing $p$, we can estimate the average number of heads in $n$ flips.
+
+Continuing with the example, after carrying out $n$ tosses, obtaining $k$ heads, we ask ourselves if the coin is balanced, that is, if $p = 0.5$. In this case, we could approximate $\hat{p} = \frac{k}{n}$, and we would use a hypothesis test on the proportion of _successes_ (heads) in $n$ trials:
+$$\begin{array}{rcl}
+H_0 &:& p = 0.5 \\
+H_1 &:& p\ne 0.5\\
+\end{array}$$
+
+This is the so-called __frequentist__ view of statistics.
+
+__Bayesian inference__ has a slightly different purpose, as the parameter is considered as another variable:
+
+- It is assumed that we have _a priori_ knowledge about the distribution of the parameters of the phenomenon.
+- We have data that provide a _credibility_ or _likelihood_ of the parameter.
+- An _a posteriori_ estimate of the probability distribution of the parameters is obtained, taking into account the data obtained.
+
+All this is related by means of Bayes' Theorem above. Let $\theta$ be the parameter that models the phenomenon (for example, the probability $p$ of getting heads when tossing a coin), and let $D$ be the set of data obtained in an experiment of the phenomenon under study. Then:
+$$\mathbb{P}(\theta|D) = \frac{\mathbb{P}(D|\theta)\cdot \mathbb{P}(\theta)}{\mathbb{P}(D)}$$
+In short, it is usually written (since the denominator does not depend on $\theta$):
+$$\mathbb{P}(\theta|D) \propto \mathbb{P}(D|\theta)
+\cdot \mathbb{P}(\theta)$$
+
+$\mathbb{P}(\theta|D)$ is the posterior distribution of the parameter (once we have taken the experimental data into account), $\mathbb{P}(D|theta)$ is the likelihood or credibility (what is the probability of having obtained the data we have obtained, knowing that the parameter has the value $\theta$), and $\mathbb{P}(\theta)$ summarises the a priori knowledge about the parameter.
+
+Bayesian inference can therefore be summarised as:
+$$\text{Posterior} = \text{Likelihood} \cdot \text{Prior}$$
+
+Given that the _Prior_ can be prior knowledge or belief about the parameter distribution, then _Posterior_ is the update of that knowledge or belief, taking into account the available evidence (which is represented by the term _Likelihood_).
+
+# Bayesian inference in `R`.
+We show an example to demonstrate the connections between the three distributions described above. We are going to study the flips of a coin and what is the posterior probability of getting heads.
+
+```{r}
+trials <- c('head', 'head', 'head', 'tail', 
+             'tail', 'head', 'head', 'tail',
+             'tail', 'head')
+N <- length(trials)                      
+nHeads <- sum(trials == 'head')  
+nTails <- sum(trials == 'tail') 
+```
+
+We do not know the value of $\theta$, the probability of drawing heads, so we will consider 100 candidate values between 0 and 1:
+
+```{r}
+theta <- seq(from = 1 / (N + 1), 
+             to = N / (N + 1), 
+             length = 100)
+```
+
+## Choice of _Prior_
+
+Sometimes the choice of _prior_ depends on some belief or prior knowledge about the parameter. It can be completely devoid of information (e.g., assume that any value of the parameter is equally likely), or provide quite a lot of information (consider that the value of the parameter, for example, is around 0.5).
+
+Let's start by considering a _prior_ with information: Let's assume that $\theta$ follows a triangular distribution, which takes the maximum (the mode) at $\theta = 0.5$:
+```{r}
+# Triangular
+pTheta <- pmin(theta, 1 - theta)
+# We normalise so that the sum is 1
+pTheta <- pTheta / sum(pTheta)
+# We could represent it graphically in a simple way with:
+plot(theta, pTheta)
+lines(theta, pTheta)
+```
+
+```{r echo = TRUE}
+df <- data.frame(theta = theta, prior = pTheta)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color ="green") +
+  geom_area(fill = "green", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + ylab(TeX("$P(\\theta)$")) +
+  labs(caption = "Triangular distribution") +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+## Likelihood function
+
+In the _frequentist_ view of statistics, our maximum likelihood estimate of the parameter $\theta$ is the proportion of witnessed events over the total number of samples:
+$$\hat{\theta} = \frac{\text{nHeads}}{N}$$
+```{r}
+theta_hat <- nHeads / N
+theta_hat
+```
+
+In _Bayesian_ inference, the likelihood function is used to redistribute the credibility of the a priori distribution according to the new evidence (the data).
+
+In this example, the likelihood function is given by a binomial distribution, which models how many successes occur among $n$ attempts:
+
+$$\mathbb{P}(\text{Roll }k\text{ heads out of }N\text{ trials}|\theta) = {N \choose k} \theta^k (1 - \theta)^{N - k}$$
+
+- $N$: number of times the event could occur, i.e. the number of attempts.
+- $k$: number of times the event occurs.
+- $\theta$: the parameter of our model, which indicates the probability that in an isolated roll it comes up heads (Bernoulli experiment).
+
+```{r}
+pDataGivenTheta <- choose(N, nHeads) * theta^nHeads * (1 - theta)^nTails
+```
+
+The likelihood has this approximate form:
+```{r echo = TRUE}
+df <- data.frame(theta = theta, prior = pDataGivenTheta)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color = "green") +
+  geom_area(fill = "green", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + ylab(TeX("$P(D | \\theta)$")) +
+  labs(caption = "Likelihood function") +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+## Computation of the posterior distribution
+
+The posterior distribution is computed from the prior using Bayes.
+
+Recall that the denominator term in Bayes' theorem is $\mathbb{P}(D)$, the marginal probability of the data. By the total probability theorem, we can compute it this way:
+$$\mathbb{P}(D) = \int_0^1\mathbb{P}(D | \theta)\cdot\mathbb{P}(\theta)\mbox{d}\theta$$
+Having discretised the possible values of $\theta$, this integral is left as a sum:
+$$\mathbb{P}(D) \approx \sum_i\mathbb{P}(D | \theta_i)\cdot\mathbb{P}(\theta_i)$$
+```{r}
+# Marginal probability of data
+pData <- sum(pDataGivenTheta * pTheta)  
+# Bayes Theorem
+pThetaGivenData <- pDataGivenTheta * pTheta / pData
+```
+
+```{r echo = TRUE}
+posterior_triangular <- pThetaGivenData
+```
+
+
+Graphically:
+
+```{r echo = TRUE}
+df <- data.frame(theta = theta, prior = pThetaGivenData)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(col = "green") +
+  geom_area(fill = "green", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + ylab(TeX("$P(\\theta | D)$")) +
+  labs(caption = TeX("A posteriori distribution of $\\theta$, using as prior distribution the triangular distribution")) +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+If we scale the likelihood function, we can see how the probability of the _prior_ has been spread to resemble the new evidence (the _likelihood_ or _likelihood_) and construct the _a posteriori_ probability distribution of the $\theta$ parameter:
+```{r echo = TRUE}
+df_theta1 <- data.frame(theta = theta,
+                       probability = "prior",
+                       value = pTheta)
+df_theta2 <- data.frame(theta = theta,
+                       probability = "likelihood",
+                       value = pDataGivenTheta / sum(pDataGivenTheta))
+df_theta3 <- data.frame(theta = theta,
+                       probability = "posterior",
+                       value = pThetaGivenData)
+
+df <- rbind(df_theta1, df_theta2, df_theta3)
+
+ggplot(df, aes(x = theta, y = value, linetype = probability)) +
+  geom_line(color = "green") +
+  # geom_area(fill = "green", alpha = 0.15) +
+  labs(caption = "Prior, likelihood and posterior comparison") +
+  xlab(TeX("$\\theta$")) +
+  theme_minimal() + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+
+By setting it as a table, we can inspect those rows close to the one we are interested in, which is the one where the posterior is maximum:
+```{r}
+df1 <- data.frame(theta = theta,
+                  prior = pTheta,
+                  likelihood = pDataGivenTheta,
+                  posterior = pThetaGivenData)
+
+# id stores the row with the maximum "posterior".
+id <- which.max(df1$posterior)
+kable(df1[(id - 3):(id + 3), ], row.names = FALSE)
+```
+
+The __maximum a posteriori estimator__ is a point estimator of $\theta$. We could use the mode or mean, for example, of this distribution just calculated, to give an estimate of the parameter value:
+```{r}
+# Using mode:
+theta_estimated_mode <- theta[which.max(pThetaGivenData)]
+theta_estimated_mode
+
+# Using the mean or expectation:
+theta_estimated_mean <- sum(theta * pThetaGivenData)
+theta_estimated_mean
+```
+
+
+## Influence of the __Prior__.
+
+Let's start by using a _prior_ that does not provide much information. We are talking about the fact that we do not know what the a priori value of $\theta$ might be and what we do is to assign the same probability to all possible values, using the uniform distribution:
+```{r}
+# Uniform: No information
+pTheta <- dunif(theta)
+# We normalise so that the sum is 1
+pTheta <- pTheta / sum(pTheta)
+```
+
+```{r echo = TRUE}
+df <- data.frame(theta = theta, prior = pTheta)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color = "blue") +
+  geom_area(fill = "blue", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + 
+  ylab(TeX("$P(\\theta)$")) +
+  labs(caption = TeX("Uniform distribution $U(0, 1)$")) +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+We repeat the above steps, resulting in the following a posteriori distribution:
+```{r}
+# Marginal probability of data
+pData <- sum(pDataGivenTheta * pTheta)
+# Bayes Theorem
+pThetaGivenData <- pDataGivenTheta * pTheta / pData
+```
+
+```{r echo = TRUE}
+df <- data.frame(theta = theta, prior = pThetaGivenData)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color = "blue") +
+  geom_area(fill = "blue", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + 
+  ylab(TeX("$P(\\theta | D)$")) +
+  labs(caption = TeX("Posterior distribution of $\\theta$, using as a prior $U(0,1)$")) +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+```{r echo = TRUE}
+posterior_uniform <- pThetaGivenData
+```
+
+
+```{r}
+# Using mode:
+theta_estimated_mode <- theta[which.max(pThetaGivenData)]
+theta_estimated_mode
+
+# Using the mean or expectation:
+theta_estimated_mean <- sum(theta * pThetaGivenData)
+theta_estimated_mean
+```
+
+Notice that, when the _prior_ is not informative, the _posterior_ resembles the frequentist approximation $\hat{\theta} = `r theta_hat`$.
+
+Let us now use another a priori distribution, the beta of parameters 10, 10, which turns out to be very similar to a normal one, with mean 0.5:
+
+```{r}
+# Beta distribution with mean 0.5
+pTheta <- dbeta(theta, 10, 10)
+# We normalise so that the sum is 1
+pTheta <- pTheta / sum(pTheta)
+```
+
+```{r echo = TRUE}
+df <- data.frame(theta = theta, prior = pTheta)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color = "red") +
+  geom_area(fill = "red", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + 
+  ylab(TeX("$P(\\theta)$")) +
+    labs(caption = TeX("Distribution $\\beta(10, 10)$")) +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+In this case
+```{r}
+# Marginal probability of data
+pData <- sum(pDataGivenTheta * pTheta)
+# Bayes theorem
+pThetaGivenData <- pDataGivenTheta * pTheta / pData
+```
+
+```{r echo = TRUE}
+df <- data.frame(theta = theta, prior = pThetaGivenData)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color = "red") +
+  geom_area(fill = "red", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + 
+  ylab(TeX("$P(\\theta | D)$")) +
+    labs(caption = TeX("A posteriori distribution of  $\\theta$, using as prior $\\beta(10, 10)$")) +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+```{r echo = TRUE}
+posterior_beta <- pThetaGivenData
+```
+
+
+```{r}
+# Using mode:
+theta_estimated_mode <- theta[which.max(pThetaGivenData)]
+theta_estimated_mode
+
+# Using the mean:
+theta_estimated_mean <- sum(theta * pThetaGivenData)
+theta_estimated_mean
+```
+
+We can see the a posteriori distributions according to the different _prior_ in the following figure:
+
+```{r echo = TRUE}
+df_triang <- data.frame(theta = theta,
+                        prior = "triangular",
+                        posterior = posterior_triangular)
+df_unif <- data.frame(theta = theta,
+                        prior = "uniform",
+                        posterior = posterior_uniform)
+df_beta <- data.frame(theta = theta,
+                        prior = "beta",
+                        posterior = posterior_beta)
+
+df <- rbind(df_triang, df_unif, df_beta)
+
+ggplot(df, aes(x = theta, 
+               y = posterior,
+               group = prior)) + 
+  geom_line(aes(color = prior)) + 
+  labs(caption = TeX("Comparison of posterior distributions for $\\theta$, according to the used prior")) +
+  xlab(TeX("$\\theta$")) +
+  theme_minimal() + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+
+# Interval estimation
+
+A $100(1 - \alpha)$ credibility interval is any interval $(a, b)$ such that $\mathbb{P}(a < \theta < b | D) = 1 - \alpha$.
+
+The shortest credibility interval is called the __interval of maximum a posteriori density__.
+
+From `R`, we need the `HDInterval` package (installed with `install.packages("HDInterval")`), and it is used as follows:
+```{r}
+library(HDInterval)
+density <- data.frame(x = theta,
+                      y = pThetaGivenData)
+class(density) <- "density"
+
+# By default, it considers 95% intervals
+interval <- hdi(density, credMass = 0.95)
+interval
+```
+
+This means that the interval of maximum a posteriori density (at 95%) is $(`r interval["lower"]`, `r interval["upper"]`)$:
+
+\[\mathbb{P}(`r interval["lower"]` < \theta < `r interval["upper"]` | D) = 0.95\]
+
+We can check this in `R`, since
+$$\mathbb{P}(a < \theta < b | D) = \int_a^b f(\theta | D)\mbox{d}\theta$$
+where $f(\theta | D)$ is the _a posteriori_ density function. In the discrete case:
+$$\mathbb{P}(a < \theta < b | D) \approx \sum_{a<\theta_i<b} \mathbb{P}(\theta_i | D)$$
+So:
+```{r}
+lower_interval <- interval["lower"]
+upper_interval <- interval["upper"]
+# Probability of theta in that interval
+# It should be approximately 0.95.
+p <- sum(pThetaGivenData[(theta > lower_interval) & (theta < upper_interval)])
+p
+```
+
+# Bayesian hypothesis testing
+
+Suppose we have two hypotheses $H_0$ (null) and $H_1$ (alternative) that we want to compare. Before conducting any experiment, we may have _beliefs_ about which of these hypotheses is true. After conducting an experiment, Bayesian inference talks about the probability that the null hypothesis is true ($\mathbb{P}(H_0)$), and even the _a posteriori_ probability of the hypotheses, which can be calculated using Bayes' Theorem:
+$$\mathbb{P}(H_0|D) = \frac{\mathbb{P}(D|H_0)\mathbb{P}(H_0)}{\mathbb{P}(D)}$$
+and the analogous for the alternative hypothesis $H_1$.
+
+Operating with the posterior distributions, we arrive at:
+$$\begin{array}{ccccc}
+\frac{\mathbb{P}(H_1|D)}{\mathbb{P}(H_0|D)} & = & \frac{\mathbb{P}(D|H_1)}{\mathbb{P}(D|H_0)} & \times & \frac{\mathbb{P}(H_1)}{\mathbb{P}(H_0)} \\
+\uparrow & & \uparrow & & \uparrow \\
+\text{posterior odds} & & \text{Bayes factor} & & \text{prior odds} \\
+\end{array}$$
+
+The _prior odds ratio_ tries to quantify what is believed a priori about the two hypotheses. If it is a high value, it indicates that there is a strong belief that the hypothesis is true. Analogously, the _posterior odds ratio_ is interpreted on the a posteriori evidence.
+
+The factor relating the two is the Bayes factor ($BF$), which plays a similar role to the $p$-value in frequentist hypothesis testing: it quantifies the strength of the evidence provided by the data.
+
+Thus, in a Bayesian analysis, the Bayes factor is often referred to when testing. The reason why the BF is mentioned instead of the _posterior odds ratio_ is that the latter is dependent on the _prior_ chosen by each researcher or data analyst. To eliminate this bias, the BF is used.
+
+__Interpretation of the Bayes Factor__
+
+An intuitive explanation of the Bayes factor is as follows: if you run an experiment and, for example, $BF = 4$, this means that the data support that the alternative hypothesis is 4 times more likely than the null hypothesis.
+
+In the following table, we show some interpretation of the $BF$ about the evidence it implies in favour of the alternative hypothesis.
+
+| Bayes Factor| Interpretation|
+|--:|--:|
+| $0 < BF < 3$| Negligible evidence|
+| $3 < BF < 20$| Positive (weak to moderate) evidence|
+| $20 < BF < 150$| Strong Evidence |
+| $BF > 150$| Very Strong Evidence |
+
+From `R`, the `BayesFactor` library can be used to calculate the Bayes factor from the data. In this case, the tests it performs for proportions are of the type:
+$$\begin{array}{c}
+H_0 : \theta = \theta_0 \\
+H_1 : \theta \ne \theta_0 \\
+\end{array}$$
+
+To test whether $\theta = 0.5$, just do:
+```{r}
+library(BayesFactor)
+
+# First argument: number of successes in the N attempts
+# Second argument: the total number of attempts
+# p is the value of theta in the null hypothesis
+proportionBF(nHeads, N, p = 0.5)
+```
+
+The higher the BF (here it is less than 1), the greater the evidence against the null hypothesis. In this case, there is little or no evidence that the alternative hypothesis ($\theta\ne 0.5$) is true.
+
+# References
+
+[Bayesian basics](https://sites.google.com/a/umich.edu/micl/miscfiles/IntroBayes.pdf)
+
+[Bayesian statistics - brms package](https://github.com/David-Hervas/9JRes)
+
+[Film rating prediction - Frequentist vs. Bayesian model](https://towardsdatascience.com/linear-and-bayesian-modelling-in-r-predicting-movie-popularity-6c8ef0a44184)
+
+[Bayesian First Aid](https://github.com/rasmusab/bayesian_first_aid)
+
+[Learning Bayes](http://florianhartig.github.io/LearningBayes/)
+
+[Bayesian Thinking](https://statswithr.github.io/book/)
+
+[Little Book of R for Bayesian Statistics](https://a-little-book-of-r-for-bayesian-statistics.readthedocs.io/en/latest/)
+
+[Bayesian networks](http://bnlearn.com/)
+
+[Bayesian Networks Tutorial](https://www.norsys.com/tutorials/netica/secA/tut_A1.htm)

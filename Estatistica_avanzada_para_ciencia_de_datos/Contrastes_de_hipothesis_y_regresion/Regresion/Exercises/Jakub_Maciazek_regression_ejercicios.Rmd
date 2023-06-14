@@ -87,13 +87,19 @@ hist(ToyotaCorolla$Price)
   
   However, knowing the model might be inaccurate due to above reasons, standard linear regression was conducted, as required by the Task.
 
-<!-- 
+<!--
 
-IS ABOVE ANALYSIS CORRECT? cAN I USE THIS MODEL AT ALL? oR THIS ONLY APPLIES TO INDEPENDENT VARIABLES? SHOULD i HAVE CHECKED THEM THEN? wHAT ARE BASE RULES FOR STARTING THE REGRESSION ANALYSIS?
+Comments for personal knowledge: PYTANIE 1
 
-Should I test for variables independence as well? Can I just assume data is continuous? Is it continuous here? 
-
-Btw, should I have checked with pearson correlation test if they are correlated at the beginning as well?
+Więc, chcę budowac model regresji liniowej, ale przewidywana wartość nie jest z rozkładu normalnego:
+  - Czy powyższe wnioski poprawne że:
+    - lepiej byłoby użyć "Generalized Linear Model from for exp. "gamma" family, or to transform the price with logarithmic function"
+    - że to może wpływać na dokładnośc modelu jeśli nic z tym nie zrobię a będę generował regresji liniowej?
+  
+  - Czy może to żałożeni o rozkłądzie dotyczy independent variables a nie dependent? Powinienem je wszystkie sprawdzić? I co z nimi robić, co wnioskowac jak wyjdą nienormalne?
+  - Powinienem przetestować independence of dependent variables?
+  - czy potrzebuję zeby dane były ciągle?
+  - Powinienem był sprawdzić na wstępnie czy są skorelowane "pearson correlation test'em"?
 
 --> 
 
@@ -110,17 +116,7 @@ m1 <- lm(Price ~. , data = ToyotaCorolla)
 summary(m1)
 ```
 
-<!-- 
-KRWA, nie wazne bo zapomnialem o CC
-
-What to do, when after conversion of categorical variable to dummy binary ones, some are significant, and other are not ?!?! Should I have kept petrol below? I can check with anova if one without it is better.
-
-#m2b <- lm(Price ~ Age + KM + FuelType + HP + Weight , data = ToyotaCorolla)
-#summary(m2b)
-
---> 
-
-  Starting analysis with examination of the **F-statistic** and its corresponding **p-value**. It can be observed that its value equals 948 and is far from greater than 1, and p-value is essentialy 0, which means that at least one of the predictor variables is significantly related to the outcome variable. To check which predictors are significant, coefficient table was examined.
+  Starting analysis with examination of the **F-statistic** and its corresponding **p-value**. It can be observed that its value equals 948 and is far greater than 1, and p-value is essentialy 0, which means that at least one of the predictor variables is significantly related to the outcome variable. To check which predictors are significant, coefficient table was examined.
   
 ```{r}
 summary(m1)$coefficient
@@ -129,10 +125,7 @@ summary(m1)$coefficient
   Based on the **t-statistic**, it can be seen, that some variables are insignificant, as their Pr(>|t|) is higher than 0.05, meaning there is no significant association between the predictor and the outcome variable.
   
   In order to make a better model, new one was calculated, involving only significant variables (meaning all except MetColor and Doors).
-<!-- 
- Also, as after binarization only one of the Fuel variables was significant, and it was far less significant than the others, it was also excluded from the model.
---> 
-
+  
 
 ```{r}
 m2 <- lm(Price ~. -Doors -MetColor  , data = ToyotaCorolla)
@@ -145,17 +138,6 @@ summary(m2)
 $Price = \\ -3718 -122.1*Age - 0.01625*KM + 3388*FuelTypeDiesel + 1112*FuelTypePetrol \\  + 60.89*HP + 330.5*Automatic - 4.168*CC + 19.94*Weight$
 
   Based on DF information, it can be said that it was computed based on 1427 independent pieces of information.
-
-<!-- 
-WHAT TO DO, if stgh, WITH THIS:
-
-
-  And confidence interval for model coefficients is: 
-
-```{r}
-confint(m2)
-```
---> 
 
 
 ## Model goodness and results analysys
@@ -173,20 +155,18 @@ confint(m2)
 
   To asses model accuracy, R-squared value can be used. However, it will always increase when more variables are added to the model, even if those variables are only weakly associated with the response.
   
-  In this case to models to compare have different number of predictors, therefore another measure, Adjusted R Square, is used to measure and compare their goodness, as it is adjusted to the number of used parameters.
+  In this case the models to compare have different number of predictors, therefore another measure, Adjusted R Square, is used to compare their goodness, as it is adjusted to the number of used parameters.
   
-  For model m1, value of Adjusted R Squared equals 0.8684, which means that the model explains ~87% of variance when predicting value of the car. Model m2 is s, as for the same parameter has value 0.8685.
+  For model m1, value of Adjusted R Squared equals 0.8684, which means that the model explains ~87% of variance when predicting value of the car. Model m2 is slightly better, as for the same parameter has value 0.8685 while using less predictors.
   
    Large proportion of the variability in the response has been explained by the regression.
 
 
 ### Goodness of fit - RSE
 
-  Other measure of the quality of the model is RSE/sigma (Residual Standard Error), which is the measure of level of prediction. 
+  Other measure of the quality of the model is RSE (Residual Standard Error). It is the absolute measure of standard deviation of residual, meaning the average distance between prediction and actual value. Divided by mean value of predicted variable, error rate (relative error) is received.
   
-  It is the measure of standard deviation of residual, meaning the average distance between prediction and actual value. Divided by mean value of predicted variable, error rate (relative error) is received.
-  
-  For m1 and m2 those are respectively 0.1226107 and 0.1225507, which means that both models have ~13% error rate, with m2 being slightly more accurate again.
+  For m1 and m2 those are respectively 0.1226107 and 0.1225507, which means that both models have ~13% prediction error rate, with m2 being slightly more accurate again.
 
   
 ```{r}
@@ -198,10 +178,11 @@ rse2
 ```
 
 <!-- 
-Czy ja tutaj dobrze rozumiem co liczé? Czy sigma to jest faktycznie RSE, i czy dzielenie jej przez Sredniá da blad wzgledny, a wiec ten percentage error?` -> to chyba dobrze
+Comments for personal knowledge: PYTANIE 2
 
+Źródło: http://www.sthda.com/english/articles/40-regression-analysis/167-simple-linear-regression-in-r/#model-assessment
 
-Czy dobra nazwa ze relative error?
+Dobrze rozumiem ten error rate, że to średni błąd względny predykcji?
 --> 
 
 
@@ -213,14 +194,12 @@ Czy dobra nazwa ze relative error?
 mean(residuals(m2))
 ```  
   
-  Errors must also be uniformly distributed. As can be seen by the histogram and density plot below, they are normally distributed. 
+  Errors must also be normally distributed. As can be seen by the histogram and density plot below, they are normally-like distributed. 
 
 <!-- 
-WHAT IN THIS CASE ?!?!? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Comments for personal knowledge: PYTANIE 3
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-And later in Q-Q plot we check if errors are normally distributed.... SO WHICH DISTRIBUTION SHOULD IT BE?
+Residuals should be Normally or Uniformly distributed?
 --> 
 
 ```{r}
@@ -308,15 +287,10 @@ m2 <- m2_or
  - Repeat the analysis made for m1 and m2. Also, analyze the significancy of the regression coefficients.
  
  
- ## Selection of nonlinear dependent variables
+## Selection of nonlinear dependent variables
  
  In order to find non-linear dependent variables, multiple scatter plots were generated.
- 
-<!-- 
-Yyyy, ale czy to na pewno nie jest linear regression? -> patrz 3.3. non-linear regression jest wymineniona jako osobny punkt od polynomial and orthogonal.
---> 
- 
- 
+
 ```{r}
 plot(ToyotaCorolla$Age, ToyotaCorolla$Price)
 plot(ToyotaCorolla$KM, ToyotaCorolla$Price)
@@ -325,7 +299,7 @@ plot(ToyotaCorolla$CC, ToyotaCorolla$Price)
 plot(ToyotaCorolla$Weight, ToyotaCorolla$Price)
 ```
 
-Based on this plots followink relationships can be observed:
+Based on this plots following relationships can be observed:
  
  - Age has rather linear influence on the price, slightly exponential
  - KM have exponential effect on Price
@@ -335,7 +309,9 @@ Based on this plots followink relationships can be observed:
   Based on above observations, polynomial aspect will be added to Age, 3rd degree to HP and 3rd to CC.
 
 <!-- 
-What is the difference between orthogonal and polynomial?
+Comments for personal knowledge: PYTANIE 4
+
+Jaka jest różnica między wielomianowymi a ortogonalnymi?
 --> 
 
 ## Polynomial model creation and analysis
@@ -395,9 +371,7 @@ plot(density(residuals(m3)))
 ```
 
 There is no bias in the model as errors mean equals 0 and they are normally distributed.
-<!-- 
-Właśnie, normally not uniformly
---> 
+
 
 **1) Residuals vs fitted values**
 
@@ -487,9 +461,6 @@ plot(density(residuals(m4)))
 
 Again, there is no bias in the model as errors mean equals 0 and residuals are normally distributed.
 
-<!-- 
-Właśnie, normally not uniformly
---> 
 
 **1) Residuals vs fitted values**
 
@@ -531,15 +502,12 @@ plot(m4, which = 4)
 
 anova(m1, m2, m3, m4)
 
-<!-- 
-What about this?!?!?! :
+<!--
+Comments for personal knowledge: PYTANIE 5
 
-  Using anova, we can compare situations, where one model extends the other one. In this case can following sets of models can be compared: (m1 with m2 with m3), (m1 with m2 with m4).
-  
-??? or as m2 has smaller number of arguments than m1... m2 with m1, m2 with m3 and m2 with m4... but can I if i have removed weight argument?
+Czy dobrze rozumiem że tu nie możemy tak dokońca użyć ANOV'y, bo:
+  - using anova, we can compare situations, where one model extends the other one. In this case can following sets of models can be compared: (m1 with m2 with m3), (m1 with m2 with m4). ... or as m2 has smaller number of arguments than m1... m2 with m1, m2 with m3 and m2 with m4... but can I if i have removed weight argument?
 
-
-CZY JA NA PEWNO MUSIALEM TO PRZELICZAC NA NOWO, CZY TE WARTOSCI MUSZA SIE POKRYWAC? CZY MNIE W ZASADZIE OBCHODZI TYLKO TO ZEBY JEDEN MODEL MIAL ICH WIECEJ?
 --> 
 
   Anova method can be used when one model extends another one. In the process of constructing the models, not only new parameters were added, but also data set changed. Therefore, below simplified versions of previous models were retrained for the purpose of comparison.
@@ -565,27 +533,9 @@ anova(m2t, m3t)
 anova(m2t, m4t)
 ```
 
-  The parameter Pr(>F) is the probability, that rejecting null hypothesis (the most complex model does not fit better than the simplest model) could be an error. Therefore if the resulting p-value is sufficiently low (usually less than 0.05), we conclude that the more complex model is significantly better than the simpler model, and thus favor the more complex model.
+  The parameter Pr(>F) is the probability, that rejecting null hypothesis (the most complex model does not fit better than the simplest model) could be an error.          Therefore if the resulting p-value is sufficiently low (usually less than 0.05), we conclude that the more complex model is significantly better than the simpler model, and thus favor the more complex model.
   
   In this case, p-value in all tests was lower than 0.05, meaning m2t model was significantly worse from all other models.
   
-```{r}
-anova(m1t, m3t)
-anova(m3t, m1t)
-```
-
-```{r}
-anova(m1t, m4t)
-anova(m4t, m1t)
-```
-
-
-```{r}
-anova(m4t, m3t)
-anova(m3t, m4t)
-```
-
-<!-- 
-Jak to interpretować ?!?!? Każdy test jestdobry ?!?!? Czy one wgl działają?
---> 
+  *We cannot compare models m1t, m3t and m4t, because in order to use ANOVA, the second model must be an extended model of the first model, which is not the case here.*
 

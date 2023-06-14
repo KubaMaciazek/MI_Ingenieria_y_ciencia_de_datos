@@ -21,6 +21,7 @@ output:
 library(readr)
 library (dplyr)
 library(corrplot)
+library(HDInterval)
 
 library(knitr)
 library(ggplot2)
@@ -56,7 +57,7 @@ The purpose of this project is to use the advanced statistical techniques seen i
 - SEX (MALE, FEMALE): gender of a patient.
 - CLASS (HEALTHY, AD): health status of a patient, meaning healthy or with Alzheimer's disease.
 
-Remaining 226 variables are of type double and describe all except one (AGE - age of patient) describe different brain parameters.
+Remaining 226 variables are of type double and all except one (AGE - age of patient) describe different brain parameters.
 
 ```{r}
 Alzheimer <- read_csv("Alzheimer.csv")
@@ -82,7 +83,7 @@ hist(Alzheimer$AGE)
 
 ## Test I: BRAIN_VOLUME & CLASS
 
-  In the first test it was be examined, whether brain atrophy (loss of neurons/capacity/volume) is specific to Alzheimer's disease. In order to do that, it was tested whether mean brain volume is significantly lower for sick individuals. Independent Welsh T-test was conducted, as samples are independent and variances unknown.
+  In the first test it was examined, whether brain atrophy (loss of neurons/capacity/volume) is specific to Alzheimer's disease. In order to do that, it was tested whether mean brain volume is significantly lower for sick individuals. Independent Welsh T-test was conducted, as samples are independent and variances unknown.
 
   First test results with *p-value* of 0.445. It means, that in general mean of brain volume for sick individuals does not significantly differ from healthy ones. It can be also observed on the boxplots comparison, where can be seen that IQR ranges and means are almost the same
   
@@ -143,10 +144,16 @@ shapiro.test(FAD_Alzheimer$BRAIN_VOLUME)
 shapiro.test(FH_Alzheimer$BRAIN_VOLUME)
 ```
 
-  From below plots it can be seen that the problem is related to samples that have more than 50 observations, and data seem to mor or less follow the distribution. Therefore it was assumed that lack of normality will not affect test result significantly.
-  <span style="color: red;">**Correct thinking? Or should I have done sth else?**</span>
-<!-- Note that, if the data are not normally distributed, it’s recommended to use the non parametric two-samples Wilcoxon rank test.
-http://www.sthda.com/english/wiki/unpaired-two-samples-t-test-in-r -->
+  From below plots it can be seen that the problem is related to samples that have more than 50 observations, and data seem to more or less follow the distribution. Therefore it was assumed that lack of normality will not affect test result significantly. (Alternatively, two-samples Wilcoxon rank test could be used, as it is suitable for data from non-normal distribution.)
+  
+<!--
+Comments for personal knowledge: PYTANIE 1
+
+Dane dla dwóch testów nie są normalne... czy poprawnie wnioskuję że minmo wszystko wynik ważny? A moze powinienem był wykonac inny test:
+
+ Note that, if the data are not normally distributed, it’s recommended to use the non parametric two-samples Wilcoxon rank test.
+http://www.sthda.com/english/wiki/unpaired-two-samples-t-test-in-r
+-->
 
 ```{r}
 par(mfrow=c(1,2))
@@ -171,7 +178,10 @@ boxplot(GM_VOLUME~CLASS, data=Alzheimer)
   *Therefore grey matter volume can be used as disease indicator for woman.*
   
   However, in men's boxplot huge difference in means is observed, which together with close p-value for general population can mean that gray matter may be a correct indicator for general population.
-  <span style="color: red;">**Correct?**</span>
+<!--
+Comments for personal knowledge: PYTANIE 2
+Poprawny wniosek?
+-->
   
 ```{r}
 t.test(Male_Alzheimer$GM_VOLUME ~ Male_Alzheimer$CLASS, alternative="less")
@@ -185,7 +195,11 @@ boxplot(GM_VOLUME~CLASS, data=Female_Alzheimer, main="Female")
 **T-tests basic assumptions**
 
   Again, in al cases except health females, p-value is greater than *0.05* indicating that sample distribution does not significantly differ from normal one.
-<span style="color: red;">**What about these woman?**</span>
+<!--
+Comments for personal knowledge: PYTANIE 3
+Znowu, co z tymi kobietami?
+-->
+  
 
 ```{r}
 # Normal distibution of brain gray matter volume by health status.
@@ -229,7 +243,11 @@ boxplot(WM_VOLUME~CLASS, data=Female_Alzheimer, main="Female")
 **T-tests basic assumptions**
 
   Samples divided by genders follow normal distribution, however general ones differ from it, especially sample of healthy individuals differ very much with p-value of *5.47e-06*.
-  <span style="color: red;">**So, what to do with that?**</span>
+<!--
+Comments for personal knowledge: PYTANIE 4
+Znowu, co z tą normalnością?
+-->
+    
 
 ```{r}
 # Normal distibution of brain gray matter volume by health status.
@@ -303,7 +321,11 @@ rse2 <- sigma(m2)/mean(Alzheimer$BRAIN_VOLUME)
 rse2
 ```
 
-  Residuals do not grow for higher values and are fairly normally distributed, which satisfies regression assumptions.
+  Though residuals median does not equal zero but -5.53, which means that model is slightly lowers the score, residuals do not grow for higher values and are fairly normally distributed, which satisfies regression assumptions.
+<!--
+Comments for personal knowledge: PYTANIE 5
+Poprawne wnioskowanie o rozkładzie residualsów?
+-->
 
 ```{r}
 par(mfrow=c(1,2))
@@ -422,7 +444,7 @@ m3 <- lm(WM_VOLUME ~ SEX + AGE, data = Alzheimer)
 summary(m3)
 ```
 
-  Obtained model m3 explains ~41% of variance of predicted value and has ~9% error rate. <span style="color: red;">**Czy ja dobrze licze ten error rate?!?!**</span> Moreover, model seems to satisfy regression assumptions of normality of residuals deistribution and homoscedasticity.
+  Obtained model m3 explains ~41% of variance of predicted value and has ~9% error rate. Moreover, model seems to satisfy regression assumptions of normality of residuals distribution and homoscedasticity, despite residual mean not equal to 0.
 
 ```{r}
 rse3 <- sigma(m3)/mean(Alzheimer$WM_VOLUME)
@@ -434,11 +456,13 @@ plot(m3, which=1:2)
 
 **Polynomial model**
 
-  Addition of a polynomial to the previous model makes AGE loose significance and R-square quality. Therefore model m4 is worse than m3, and it is unnesecssary to compare them with anova.
+  Addition of a polynomial to the previous model makes AGE loose significance and gain only little in respect of R-square quality. Moreover, with anova test *Pr(>F)* greater than significance level, it can be said that m3 model performs better than m4.
 
 ```{r}
 m4 <- lm(WM_VOLUME ~ SEX + AGE + I(AGE^2), data = Alzheimer)
 summary(m4)
+
+anova(m3, m4)
 ```
 
 
@@ -452,7 +476,7 @@ ggplot(data = Alzheimer, aes(x=GM_VOLUME, y=AGE)) + geom_point(aes(colour=SEX))
 ggplot(data = Alzheimer, aes(x=WM_VOLUME, y=AGE)) + geom_point(aes(colour=SEX))
 ```
 
-  Due to the lack of obvious relationship, 1st model was constructed containing all discussed variables. It explained ~20% of variance in predicted variable and had ~9% error rate. Model satisfied regression assumptions, though it had a little pattern of growwing residuals for extreme values.
+  Due to the lack of obvious relationship, 1st model was constructed containing all discussed variables. It explained ~20% of variance in predicted variable and had ~9% error rate. Model satisfied regression assumptions, though it had a little pattern of growing residuals for extreme values.
 
 ```{r}
 m1 <- lm(AGE ~ BRAIN_VOLUME + GM_VOLUME + WM_VOLUME + SEX, data = Alzheimer)
@@ -497,7 +521,7 @@ plot(m3, which=1:2)
 
 **Models comparison**
 
-  Model m2 proofs the best one, as it contains only significant variables. It is confirmed to be better by anova tests as well as in both cases *Pr(>F)* value was greater than 0.05.
+  Model m2 proofs to be the best one, as it contains only significant variables. It is confirmed to be better by anova tests as well as in both cases *Pr(>F)* value was greater than 0.05.
 
 ```{r}
 anova(m2, m1)
@@ -506,7 +530,7 @@ anova(m2, m3)
 
   Even though m2 is the best model, using all significant variable from given set, it still explains only 20% of variance in the predicted age. On the other hand, its predictions have only ~9% error rate.
   
-  Therefore, it can be said that those volumetric parameters and sex, averagely good indicators of age.
+  Therefore, it can be said that those volumetric parameters and sex, are poor indicators of age.
 
 
 # Logistic regression and classification
@@ -548,7 +572,7 @@ m2 <- glm(formula = IS_HEALTHY ~ BRAIN_VOLUME + GM_VOLUME + WM_VOLUME + AGE, fam
 summary(m2)
 ```
 
-  Last obtained model cotains only significant variables.
+  Last obtained model contains only significant variables.
 
 ```{r}
 m3 <- glm(formula = IS_HEALTHY ~ BRAIN_VOLUME + GM_VOLUME, family = binomial, data = Training_Alzheimer)
@@ -563,7 +587,7 @@ summary(m3)
 
 <!-- http://www.sthda.com/english/articles/36-classification-methods-essentials/151-logistic-regression-essentials-in-r/#assessing-model-accuracy -->
 
-  After compariosn of 3 models, it can be seen that the second one, even though contains variables with significance level over 0.05, has the highes accuracy of ~85%, with ~15% error rate.
+  After compariosn of 3 models, it can be seen that the second one, even though contains variables with significance level over 0.05, has the highest accuracy of ~85%, with ~15% error rate.
 
 ```{r}
 #m1
@@ -657,7 +681,7 @@ box_plot <- boxplot(prob.predictions~IS_HEALTHY, data=Testing_Alzheimer, main="M
 
   From below summary and the plot, it can be seen that first quantile for healthy individuals is similar to sick ones median value of probability. At the same time, third quantile of probabilities for sick characters is little below healthy ones median.
   
-  This means, that if the threshold was adjusted to be sick ones median, accuracy ind detecting sick patients would rise to 50%, with false negative ration for healthy patients around 25%. To increase accuracy of detecting sick individuals to 75%, probability threshold set at 3rd quantile of sick ones probabilities, would also result in ~50% error rate for predicting healthy indyviduals.
+  This means, that if the threshold was adjusted to be sick ones median, accuracy in detecting sick patients would rise to 50%, with false negative ration for healthy patients around 25%. To increase accuracy of detecting sick individuals to 75%, probability threshold set at 3rd quantile of sick ones probabilities, would also result in ~50% error rate for predicting healthy individuals.
 
 ```{r}
 Summary<-box_plot$stats
@@ -666,8 +690,380 @@ rownames(Summary)<-c("Min","First Quartile","Median","Third Quartile","Maximum")
 Summary
 ```
 
+*To achieve better results, possible use of other volumetric data from the file, ones that we do not consider, might be useful.*
+
 # Inferencia Bayesiana
 
-<span style="color: red;">**ToDo: We want to make a study of the incidence of Alzheimer’s disease in the population, since it is estimated that, a priori, the incidence of Alzheimer’s disease in the population over 60 years of age is between 7% and 9%.**</span>
+>*ToDo: We want to make a study of the incidence of Alzheimer’s disease in the population, since it is estimated that, a priori, the incidence of Alzheimer’s disease in the population over 60 years of age is between 7% and 9%.*
+>
+  - Bayesian inference will be based on studied dataset
+  - Estimate the a posteriori distribution of the theta
+ proportion of Alzheimer’s cases twice, first starting from a non-informative prior (uniform in [0,1]
+), and secondly starting from a trapezoid-shaped prior,
+  - In both cases, give the maximum a posteriori estimator (using both the mode and the mean) and the 95% maximum posterior density credible interval for theta.
+
+## Data preparation
+
+  At first, dataset was reduced to the population over 60 years old as given by the task, and initial statistics were calculated.
+
+```{r}
+Alzheimer_60Plus_Data <- filter(Alzheimer, AGE >= "60")
+Alzheimer_60Plus <- Alzheimer_60Plus_Data$CLASS
+
+N <- length(Alzheimer_60Plus)
+N
+
+nHealthy <- sum(Alzheimer_60Plus == 'HEALTHY')
+nHealthy
+
+nSick <- sum(Alzheimer_60Plus == 'AD')
+nSick
+```
+
+## Theta definition
+
+  Our goal is to learn about the incidence of Alzheimer’s disease in the given population. As it is said to be between 7% and 9%, following probabilities could be considered:
+
+```{r}
+theta <- seq(from = 0.07, 
+             to = 0.09, 
+             length = 100)
+theta
+```
+
+  However, as we would like to compare results fro two priors, from given range of distribution from 0 to 1, following theta set will be considered.
+
+```{r}
+theta <- seq(from = 0, 
+             to = 1, 
+             length = 100)
+theta
+```
+
+## Analysis with non-informative prior
+
+In this case, knowledge about the probability being between 7% and 9% is not used.
+
+### Priori
+<!--
+Comments for personal knowledge: PYTANIE 6
+Czy dobrze rozumiem te funkcję i poprawną tu pryjąłem?
+-->
+
+Non-informative prior (uniform in [0,1]) is used.
+
+```{r}
+pTheta <- dunif(theta, min = 0, max = 1)
+pTheta <- pTheta / sum(pTheta)
+
+#plot(theta, pTheta)
+#lines(theta, pTheta)
+```
+```{r echo = FALSE}
+df <- data.frame(theta = theta, prior = pTheta)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color ="green") +
+  geom_area(fill = "green", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + ylab(TeX("$P(\\theta)$")) +
+  labs(caption = "Triangular distribution") +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+### Likelyhood function
+
+<!--
+Comments for personal knowledge: PYTANIE 7
+Czy dobrze rozumiem te funkcję i poprawną tu pryjąłem?
+-->
+
+  In this case, likelihood function is given by binomial distribution, which models how many patients from given population have Alzheimer's disease.
+
+```{r}  
+pDataGivenTheta <- choose(N, nSick) * theta^nSick * (1 - theta)^nHealthy
+```
+
+```{r}
+df <- data.frame(theta = theta, prior = pDataGivenTheta)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color = "green") +
+  geom_area(fill = "green", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + ylab(TeX("$P(D | \\theta)$")) +
+  labs(caption = "Likelihood function") +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+### Posteriori distribution
+
+```{r}
+# Marginal probability of data
+pData <- sum(pDataGivenTheta * pTheta)  
+# Bayes Theorem
+pThetaGivenData <- pDataGivenTheta * pTheta / pData
+```
+
+```{r}
+posterior_uniform <- pThetaGivenData
+```
+
+```{r echo = FALSE}
+df <- data.frame(theta = theta, prior = pThetaGivenData)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(col = "green") +
+  geom_area(fill = "green", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + ylab(TeX("$P(\\theta | D)$")) +
+  labs(caption = TeX("A posteriori distribution of $\\theta$, using as prior distribution the uniform distribution")) +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+```{r echo = FALSE}
+df_theta1 <- data.frame(theta = theta,
+                       probability = "prior",
+                       value = pTheta)
+df_theta2 <- data.frame(theta = theta,
+                       probability = "likelihood",
+                       value = pDataGivenTheta / sum(pDataGivenTheta))
+df_theta3 <- data.frame(theta = theta,
+                       probability = "posterior",
+                       value = pThetaGivenData)
+
+df <- rbind(df_theta1, df_theta2, df_theta3)
+
+ggplot(df, aes(x = theta, y = value, linetype = probability)) +
+  geom_line(color = "green") +
+  # geom_area(fill = "green", alpha = 0.15) +
+  labs(caption = "Prior, likelihood and posterior comparison") +
+  xlab(TeX("$\\theta$")) +
+  theme_minimal() + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+```{r}
+df1 <- data.frame(theta = theta,
+                  prior = pTheta,
+                  likelihood = pDataGivenTheta,
+                  posterior = pThetaGivenData)
+
+# id stores the row with the maximum "posterior".
+id <- which.max(df1$posterior)
+kable(df1[(id - 3):(id + 3), ], row.names = FALSE)
+```
+
+### Maximum a posteriori estimator
+
+  Investigated **maximum a posteriori estimatori** is equal to **0.(1)** when computed by mode, and **0.12** when computed by mean.
+
+```{r}
+# Using mode:
+theta_estimated_mode <- theta[which.max(pThetaGivenData)]
+theta_estimated_mode
+
+# Using the mean or expectation:
+theta_estimated_mean <- sum(theta * pThetaGivenData)
+theta_estimated_mean
+```
+
+### Interval estimation
+
+```{r}
+density <- data.frame(x = theta,
+                      y = pThetaGivenData)
+class(density) <- "density"
+
+# By default, it considers 95% intervals
+interval <- hdi(density, credMass = 0.95)
+interval
+```
+
+```{r}
+lower_interval <- interval["lower"]
+upper_interval <- interval["upper"]
+
+p <- sum(pThetaGivenData[(theta > lower_interval) & (theta < upper_interval)])
+p
+```
 
 
+
+
+## Analysis with given priori
+
+In this case, knowledge about the probability being between 7% and 9% is used.
+
+### Priori
+
+Given trapezoid-shaped prior is used.
+
+<!--
+#pTheta <- pmax(0, pmin(theta, 0.16 - theta))
+
+#pTheta <- pmax(0, pmin(1, 100/7*theta))
+
+#pTheta <- (1 / 0.07)*theta
+#pTheta <- -(1/0.07)*theta + (1/0.07)*0.09+1
+-->
+
+```{r}
+pTheta <- pmax(0, pmin(1, pmin((1 / 0.07)*theta , -(1/0.07)*theta + (1/0.07)*0.09+1 )))
+pTheta <- pTheta / sum(pTheta)
+```
+
+```{r echo = FALSE}
+df <- data.frame(theta = theta, prior = pTheta)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color ="green") +
+  geom_area(fill = "green", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + ylab(TeX("$P(\\theta)$")) +
+  labs(caption = "Triangular distribution") +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+### Likelyhood function
+
+<!--
+Comments for personal knowledge: PYTANIE 7
+Czy dobrze rozumiem te funkcję i poprawną tu pryjąłem?
+-->
+
+  In this case, likelihood function is again given by binomial distribution, which models how many patients from given population have Alzheimer's disease.
+
+```{r}  
+pDataGivenTheta <- choose(N, nSick) * theta^nSick * (1 - theta)^nHealthy
+```
+
+```{r}
+df <- data.frame(theta = theta, prior = pDataGivenTheta)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(color = "green") +
+  geom_area(fill = "green", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + ylab(TeX("$P(D | \\theta)$")) +
+  labs(caption = "Likelihood function") +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+### Posteriori distribution
+
+```{r}
+# Marginal probability of data
+pData <- sum(pDataGivenTheta * pTheta)  
+# Bayes Theorem
+pThetaGivenData <- pDataGivenTheta * pTheta / pData
+```
+
+```{r}
+posterior_trapezoidal <- pThetaGivenData
+```
+
+```{r echo = FALSE}
+df <- data.frame(theta = theta, prior = pThetaGivenData)
+ggplot(df, aes(x = theta, y = prior)) +
+  geom_line(col = "green") +
+  geom_area(fill = "green", alpha = 0.15) +
+  xlab(TeX("$\\theta$")) + ylab(TeX("$P(\\theta | D)$")) +
+  labs(caption = TeX("A posteriori distribution of $\\theta$, using as prior distribution the trapezoidal distribution")) +
+  theme_minimal()  + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+```{r echo = FALSE}
+df_theta1 <- data.frame(theta = theta,
+                       probability = "prior",
+                       value = pTheta)
+df_theta2 <- data.frame(theta = theta,
+                       probability = "likelihood",
+                       value = pDataGivenTheta / sum(pDataGivenTheta))
+df_theta3 <- data.frame(theta = theta,
+                       probability = "posterior",
+                       value = pThetaGivenData)
+
+df <- rbind(df_theta1, df_theta2, df_theta3)
+
+ggplot(df, aes(x = theta, y = value, linetype = probability)) +
+  geom_line(color = "green") +
+  # geom_area(fill = "green", alpha = 0.15) +
+  labs(caption = "Prior, likelihood and posterior comparison") +
+  xlab(TeX("$\\theta$")) +
+  theme_minimal() + 
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+```{r}
+df1 <- data.frame(theta = theta,
+                  prior = pTheta,
+                  likelihood = pDataGivenTheta,
+                  posterior = pThetaGivenData)
+
+# id stores the row with the maximum "posterior".
+id <- which.max(df1$posterior)
+kable(df1[(id - 3):(id + 3), ], row.names = FALSE)
+```
+
+### Maximum a posteriori estimator
+
+  Investigated **maximum a posteriori estimator** is equal to **0.(1)** when computed by mode, and **~0.11** when computed by mean.
+
+```{r}
+# Using mode:
+theta_estimated_mode <- theta[which.max(pThetaGivenData)]
+theta_estimated_mode
+
+# Using the mean or expectation:
+theta_estimated_mean <- sum(theta * pThetaGivenData)
+theta_estimated_mean
+```
+
+### Interval estimation
+
+```{r}
+density <- data.frame(x = theta,
+                      y = pThetaGivenData)
+class(density) <- "density"
+
+# By default, it considers 95% intervals
+interval <- hdi(density, credMass = 0.95)
+interval
+```
+
+```{r}
+lower_interval <- interval["lower"]
+upper_interval <- interval["upper"]
+
+p <- sum(pThetaGivenData[(theta > lower_interval) & (theta < upper_interval)])
+p
+```
+## Summary
+
+Received results:
+
+Non-informative apriori:
+
+  - maximum a posteriori estimator:
+  
+    - for mode: 0.(1)
+    - for mean: 0.1185771
+    
+  - Interval estimation:
+  
+    - lower: 0.08080808
+    - upper: 0.15151515
+    - p: 0.8703295
+
+
+Informative apriori:
+
+  - maximum a posteriori estimator:
+  
+    - for mode: 0.(1)
+    - for mean: 0.1094644
+    
+  - Interval estimation:
+  
+    - lower: 0.08080808
+    - upper: 0.14141414
+    - p: 0.8763503
+
+Analysis that was based on prior knowlege, concluded with more concise mode and mean estimators, as well as more compact interval with higher probability. 

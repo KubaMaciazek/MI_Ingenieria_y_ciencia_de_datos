@@ -552,7 +552,7 @@ f5 <- lm( X ~ . )
 
 This dataset stores the *Housing Values in Suburbs  of Boston*. 
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 # package with a lot of datasets
 library (MASS) # install if error
 data(Boston) #Housing Values in Suburbs of Boston
@@ -569,7 +569,7 @@ $$medv=\phi(lstat)=a_0+a_1\, lstat$$
 
 
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 lm.fit <- lm(medv ~ lstat,
              data = Boston)
 lm.fit
@@ -581,12 +581,12 @@ $$medv=\phi(lstat)=34.55-0.95\,  lstat$$
 ## Analyzing the model
 
 For more detailed information: 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 summary(lm.fit)
 ```
 
 For more information we can use *names* with the linear model:
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 names(lm.fit)
 # we ask for these information
 coefficients(lm.fit)
@@ -595,12 +595,12 @@ coefficients(lm.fit)
 
 Confidence interval for the coefficient estimates: 
  
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 confint(lm.fit)
 ```
  
  Visualizing the dataset+model:
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 attach(Boston)
 # differents plots
 plot(lstat, medv, col = "red ")
@@ -612,7 +612,7 @@ abline(lm.fit, lwd = 3, col = "red")
 ```
  
 ## Visualizing the linear model
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 oldpar <- par(mfrow = c(2, 2))
 # divides the plotting region into a 2 × 2 grid of panels
 plot(lm.fit)
@@ -629,7 +629,7 @@ Search for information of these estimators, use with the dataset and explain.
  
  Some plots regarding residuals, etc...
  
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 plot(predict(lm.fit), 
      residuals(lm.fit))
 plot(predict(lm.fit), 
@@ -640,7 +640,7 @@ plot(predict(lm.fit),
 - `hatvalues()`: On the basis of the residual plots, there is some evidence of non-linearity.
 Leverage statistics can be computed for any number of predictors using this function.
 
-```{r, eval = FALSE}
+```{r, eval = TRUE}
 plot(hatvalues(lm.fit ))
 which.max(hatvalues(lm.fit))
 ```
@@ -659,7 +659,7 @@ proportion of owner-occupied units built prior to 1940.
 
 
 $$medv=\phi(lstat,age)=a_0+a_1\, lstat+ +a_2\, age$$
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 lm.fit2 <- lm(medv~lstat+age, data = Boston)
 lm.fit2
 summary(lm.fit2)
@@ -670,7 +670,7 @@ Data set contains 13 variables, how to select the best variables?:
 - **Facing the output variable against the rest of variables**
 - Analyzing the summary of the model.
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 lm.fit3 <- lm(medv ~ ., 
               data = Boston)
 summary(lm.fit3)
@@ -678,7 +678,7 @@ summary(lm.fit3)
 
 ### Interaction terms
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 lm.fit4 <- lm(medv ~ lstat * age,
               data = Boston)
 summary(lm.fit4)
@@ -686,7 +686,7 @@ summary(lm.fit4)
 
 ### Non-linear transformations of the predictors
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 lm.fit5 <- lm(medv ~ lstat + I(lstat^2),
               data = Boston)
 summary(lm.fit5)
@@ -700,7 +700,7 @@ The $p$-value associated with the quadratic term suggests that **lm.fit5** is an
 
 Fist, we compare the  model: linear (lm.fit) and quadratic (lm.fit5). If we represent these models, we could extract some important ideas:
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 #par(mfrow=c(2,2))
 plot(lm.fit)
 #par(mfrow=c(2,2))
@@ -711,7 +711,7 @@ We can see a non-linearity in the relationship between *medv* and *lstat*.
 
 Now, we will use  `anova()` to  perform a hypothesis
 test comparing the  models.
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 anova(lm.fit, lm.fit5)
 ```
 

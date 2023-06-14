@@ -59,8 +59,23 @@ knitr::opts_chunk$set(fig.align = "center",
 
 ## Variables description
 
-<span style="color: red;">**ToDo: Analyze the structure of the dataset. What kind of data do we have? It raises the problems that we can have when working with this dataset.**</span>
-<!-- Done? Int, real, boolean and categorical? Or boolean is categorical? Continuous? That they will be converted to dummy ones? WHAT PROBLEMS? --> 
+<!-- Raczej zrobione-->
+>*ToDo: Analyze the structure of the dataset. What kind of data do we have? It raises the problems that we can have when working with this dataset.*
+
+<!--
+Comments for personal knowledge: PYTANIE 1
+
+Jakie rodzaje danyc:
+  - co z tego liczbowe a co kategorialne... czy jak jest boolean'owe to kategorialne?
+
+Jakie problemy:
+  - że ciągłość?
+  - że z rozkładu normalnego?
+  - że kategorialne więc:
+    - konwersja do 0 1 (może być w tle)
+    - czy wgl konwersja na dodatkowe 4 kolumny dla np region, mówiące że ktoś z danego regionu jak 1 i 0 w pozostałych -> Żeby byly one od siebie równo oddalnoe matematycznie, co nie bedzi eprawdziwe jak je zamienimy w jednej kolumnie na numery 0-3.
+  - czy mogę badać korelację dla kategorialnych, bez zaminay na numerki, czy do badania współczynnika korelacji dane muszą być numeryczne?
+-->
 
 **Dependent variable: gastos** - main goal of the assignment is to develop a model to predict the medical expenses of the insured. Therefore *gastos* is the dependent variable. It takes form of real value numbers.
 
@@ -83,13 +98,18 @@ head(riesgos)
  - Numerical inputs: regression requires independent variables to be numerical. For that reason *sexo*, *fumador* and *region* will be converted under the hood into boolean dummy variables, representing which category record applies to.
  - Linearity: The relationship between X and the mean of Y is linear. - independent variables will be choosen based on visual analysis, that suggests linear correlation. Also later *residuals vs fitted values plot* will be examined. If the model does not meet the linear model assumption, we would expect to see residuals that are very large (big positive value or big negative value). To assess the assumption of linearity we want to ensure that the residuals are not too far away from 0 (standardized values less than -2 or greater than 2 are deemed problematic).
  - Homoscedasticity: The variance of residual is the same for any value of X. - Will be checked through the same plot as in case of linearity, however in this case we would make sure that there is no pattern in the residuals and that they are equally spread around the y=0 line. Lack of the pattern can also be investigated in *scale-location plot*. 
- - Normality: For any fixed value of X, Y is normally distributed. - Will be checked through *QQ-plot*.  If residuals lie along 45 degree line, normality can be assumed.
+ - Normality: For any fixed value of X, Y is normally distributed, however it is even more important that residuals are normally distributed. - This will be checked through *QQ-plot*.  If residuals lie along 45 degree line, required normality of error distribution can be assumed.
   - Independence: Observations are independent of each other. - This cannot be tested with diagnostic plots, only by examination of study design. In this case, there is no reason to suspect, that value of one person impacts insurance costs of another, therefore observations should be independent.
 
-<!-- NORMALITY: necessary only for prediction error: https://towardsdatascience.com/is-normal-distribution-necessary-in-regression-how-to-track-and-fix-it-494105bc50dd --> 
+<!--
+
+Comments for personal knowledge: INFORMATION ABOUT NORMALITY AND MULTICOLLINEARITY
 
 
-<!-- NIEZALEŻNOŚĆ ZMIENNYCH OD SIEBIE -> -> ->
+NORMALITY: necessary only for prediction error: https://towardsdatascience.com/is-normal-distribution-necessary-in-regression-how-to-track-and-fix-it-494105bc50dd 
+
+
+NIEZALEŻNOŚĆ ZMIENNYCH OD SIEBIE
 
 https://towardsdatascience.com/multi-collinearity-in-regression-fe7a2c1467ea
 
@@ -111,16 +131,36 @@ HOW TO FIX MULTI-COLLINEARITY ISSUE?
 
 ## Attributes analysis
 
-<span style="color: red;">**ToDo: Statistically analyzes the attributes. Detect normality, biases, outliers, etc.**</span>
-<!-- Why, if only errors distribution matter? To know that their innormality/skewnes my influence it? Outliers now, or later with cook? How? --> 
+<!-- RUjdzie, ale przydałoby się wiecej info na prysżłość
+BRAKUJE: komentarza do tego że dane skośne albo nienormalne... albo jest ale cyz poprawny?
+POPRAWNA OCENA DLA LICZBY DZIECI i nonr-numerical atributes?!?!?!
+-->
+>*ToDo: Statistically analyzes the attributes. Detect normality, biases, outliers, etc.*
 
-  Possible outliers will be eliminated by examining histograms, boxplots and their cook's distance and influence. Also correlation between variables will be tested in oreder to eliminate possible multi-collinearity
+<!-- 
 
-<!-- Assumptions and outliers analysis -> https://sphweb.bumc.bu.edu/otlt/MPH-Modules/BS/R/R5_Correlation-Regression/R5_Correlation-Regression7.html --> 
+Comments for personal knowledge: PYTANIE 2
+
+  - To co musi być normalne, a jak nie jest to jak wpływa (tylko error distribution?)
+  
+    - CZY TO PRAWDA ŻE: "Normality: For any fixed value of X, Y is normally distributed." ??? -> TAKIE INFO ODNOŚNIE REGRESJI LINOWEJ Z LINKU: https://sphweb.bumc.bu.edu/otlt/MPH-Modules/BS/R/R5_Correlation-Regression/R5_Correlation-Regression7.html
+  
+  - jak ten bias ocenić?
+  - Co jeszcze zanalizować?
+  - Jak skośnosć wpływa na całość?
+  - Outliery teraz a nie potem cookiem?
+  
+  
+Assumptions and outliers analysis
+
+https://sphweb.bumc.bu.edu/otlt/MPH-Modules/BS/R/R5_Correlation-Regression/R5_Correlation-Regression7.html 
+--> 
+
+  Possible outliers will be eliminated by examining histograms, boxplots and their cook's distance and influence. Also correlation between variables will be tested in order to eliminate possible multi-collinearity
 
 ### Age [edad]
 
-  Age attribute does not follow normal distribution, in contrast, it is close to uniform distribution equally representing clients across all age groups. This fact, together with the lack of outliers, should mean that model won't be biased based on the age of predicted client.
+  Age attribute does not follow normal distribution, in contrast, it is close to uniform distribution equally representing clients across all age groups. This fact, together with the lack of outliers, should mean that model won't be biased by the age of predicted client.
 
 ```{r}
 par(mfrow=c(1,2))
@@ -147,9 +187,11 @@ shapiro.test(riesgos$bmi)
 ### Number of children [hijos]
 
 Nr of childern does not follow normal distribution either. It is strongly positively skewed. Therefore, if this variable is choosen as a predictor, it may also effect distribution of residuals. If this is true, modifications to the variable or its omitance might be necessary.
-<span style="color: red;">**Correct?**</span>
+
 <!-- 
-That correct ?
+Comments for personal knowledge: PYTANIE 3
+
+?!?!? POPRAWNA OCENA nienormalnosci liczby dzieci i silnej skośności ?!?!?!
 -->
 
 ```{r}
@@ -162,9 +204,11 @@ boxplot(riesgos$hijos)
 ## Non-numerical attributes analysis
 
   Both gender and regions are close to uniform distribution, which means model should not be biased in their case. For smoking indication, number of smoking persons is about only the fifth of all insured, but its number of samples should be enough to avoid biases.
-<span style="color: red;">**Correct?**</span>
+
 <!-- 
-That correct ?
+Comments for personal knowledge: PYTANIE 4
+
+POPRAWNA ALNALIZA?!?!?
 -->
 
 ```{r}
@@ -178,8 +222,8 @@ barplot(table(riesgos$region))
 
 ## Dependent variable analysis
 
-<span style="color: red;">**ToDo: Plot the expense attribute with a histogram. What knowledge do you extract from the visualized information?**</span>
-<!-- What knowledge? -->
+<!-- Zrobione-->
+>*ToDo: Plot the expense attribute with a histogram. What knowledge do you extract from the visualized information?*
 
   Expenses variable does not follow normal distribution and is highly positively skewed. Moreover, it has a large number of outliers, observations with expense value higher than 50 thousand. They might highly influence the model and worsen the prediction and may required to be removed.
 
@@ -200,7 +244,7 @@ rownames(Summary)<-c("Min","First Quartile","Median","Third Quartile","Maximum")
 Summary
 ```
 
-  As the values between 25 thousand and 35 thousand, seem to occure with similar frequency to those between 35 and 50 thousand, it seems reasonable to either keep them both or remove. Therefore threshold for outliers was set to be 50 thousand.
+  As the values between 25 thousand and 35 thousand, seem to occure with similar frequency to those between 35 and 50 thousand, it seems reasonable to either keep or remove both of them. Therefore threshold for outliers was set to be 50 thousand.
   
 ```{r}
 riesgos_or <- filter(riesgos,gastos<=50000)
@@ -218,8 +262,8 @@ boxplot(riesgos_or$gastos)
 
 ## Correlation matrix, and attributes relationship analysis
 
-<span style="color: red;">**ToDo: Obtain the correlation matrix between the attributes of the dataset. Which attributes seem to be more and less related? (cor)**</span>
-<!-- Chyba rozumeiem, DONE correctly? --> 
+<!-- Zrobione - PYTANIE: POPRAWNIE?--> 
+>*ToDo: Obtain the correlation matrix between the attributes of the dataset. Which attributes seem to be more and less related? (cor)*
 
   Correlation matrix can only be calculated for numeric values, therefore *sexo* and *fumador* were converted into binary values for that reason. For another analysis also regions were converted, showing only small correlation to bmi value.
   
@@ -256,8 +300,8 @@ boxplot(gastos~region, data=riesgos_or_corr_df)
 
 ### Variables relationship analysis
 
-<span style="color: red;">**ToDo: Visualize the relationships between the attributes - scatterplot (plot, pairs, pairs.panels).**</span>
-<!--  Chyba rozumeiem, DONE correctly?  --> 
+<!--  Zrobione --> 
+>*ToDo: Visualize the relationships between the attributes - scatterplot (plot, pairs, pairs.panels).*
 
   First and second plot visualize high influence of smoking on insured expenses.
   
@@ -273,11 +317,9 @@ boxplot(gastos~fumador, data=riesgos_or_corr_df)
   
   Question is, whether there is a 3rd variable, similarly to smoking, significantly increases costs both for smoking and non smoking people. It would move some of non-smokers to middle smoking line, and create upper line for smokers. That value may be discovered in generalized regression in later section.
   
-  **Outliers analysis:** It is important to note, that 2nd and 3rd line most likely correspond to 2 spikes in the tail of *gastos* histogram. Morover, it seems that it was a good decision not to remove outliers according to boxplot, but rather to histogram.
+  **Outliers analysis:** It is important to note, that 2nd and 3rd line most likely correspond to 2 spikes in the tail of *gastos* histogram. Moreover, it seems that it was a good decision not to remove outliers according to boxplot, but rather to histogram.
 
 ```{r}
-#plot(riesgos_or$edad, riesgos_or$gastos)
-
 ggplot(data = riesgos_or, aes(x=edad, y=gastos)) + geom_point(aes(colour=fumador))
 ```
 
@@ -294,8 +336,8 @@ Based on previous analysis 3 models were developed.
 
 ## Simple linear regression model developement
 
-<span style="color: red;">**ToDo: Set up a linear m1 regression model between expenses and another variable (the one you think best models the medical expenses of the insured).**</span>
-<!-- Only one? Simple linear regression? --> 
+<!-- Zrobone - chociaż może lepiej było wiek?--> 
+>*ToDo: Set up a linear m1 regression model between expenses and another variable (the one you think best models the medical expenses of the insured).*
 
   Analysis in previous section indicated, that smoking is the most strongly correlated to expenses, therefore it was choosen for simple linear regression.
 
@@ -304,8 +346,9 @@ m1 <- lm(gastos ~ fumador, data = riesgos_or)
 ```
 
 ## Polynomial regression model developement
-<span style="color: red;">**ToDo: Try an m2 model using polynomial functions.**</span>
-<!-- Only one? Simple regression?  --> 
+
+<!-- Zrobione - chociaż prawdopodobnie lepsze byłoby bez wielomianowego... --> 
+>*ToDo: Try an m2 model using polynomial functions.*
 
   Age was second most correlated variable and showed linear tendency at the same time, therefore it was choosen to be a polynomial predictor.
 
@@ -315,8 +358,8 @@ m2 <- lm(gastos ~ fumador  + I(edad^2), data = riesgos_or)
 
 ## Evaluation of models M1 & M2
 
-<span style="color: red;">**ToDo: Evaluates thse efficiency of the models (summary). Extracts all the information about the validity of the two models created.**</span>
-<!--  --> 
+<!-- Ujdzie ale... czy poprawna ocena nienormalnosci residual dla m1 i m2-->
+>*ToDo: Evaluates the efficiency of the models (summary). Extracts all the information about the validity of the two models created.* 
 
 
 ### M1 model evaluation
@@ -338,7 +381,13 @@ summary(m1)
 shapiro.test(m1$residuals)
 ```
 
-  As residuals distribution significantly differs from normal distribution, variables significance is not confirmed. Though that does not affect model prdictions, it suggests that choosen predictor may not be significant and best choice.
+<!--
+Comments for personal knowledge: PYTANIE 3
+
+Czy poprawnie ocenione to z nienormalnoscią residualsów?
+-->
+
+  As residuals distribution significantly differs from normal distribution, variables significance is not confirmed. Though that does not affect model predictions, it suggests that choosen predictor may not be significant and best choice.
 
 ### M2 model evaluation
 
@@ -367,21 +416,35 @@ plot(m2, which=1)
 plot(m2, which=2)
 ```
 
-  Residual standard error for 2nd model has a value of error rate ~47%.
+  After examining Residual standard error, it can be said that 2nd model has average error rate of ~47%.
 
 ```{r}
 rse2 <- sigma(m2)/mean(riesgos_or$gastos)
 rse2
 ```
 
+<!--
+Comments for personal knowledge: PYTANIE 4
+
+I CO Z TĄ NIENORMALNOŚĆIĄ RESIDUALSÓW? -> KOMENTARZ!!!
+-->
 
 ## Generalized regression model developement
 
-<span style="color: red;">**ToDo: Improve the model using generalized regression. Create an m3 model taking into account all the variables. Analyze which variables are significant. Look at the efficiency of the new model.**</span>
-<!-- All all? Or start with all, and reject collinear and insignificant? --> 
+<!-- Zrobione, ale nienormale residualsy...
+
+Comments for personal knowledge: PYTANIE 5 !!!!!!!!!!!!!!!
+  - co z nienormalnością residualsów
+  - komentarze do:
+    - edian value of residuals again is not close to 0, and shapiro-wilk test confirms that distribution of residuals is significantly different from normal. So? What now?
+    - First and third plot show that for higher expenses residuals grow, meaning model does not satisfy homoscedasticity assumption. What about linear?
+    - QQ-plot confirms that residuals does not follow normal distribution. So? What now?
+    
+--> 
+>*ToDo: Improve the model using generalized regression. Create an m3 model taking into account all the variables. Analyze which variables are significant. Look at the efficiency of the new model.*
 
 
-  To determine which variables are signivicant when constructing generalized regression model, at first all variables were included. Based on the summary and *Pr(>|t|)* value in coefficients table, it can be seen that gender is insignificant, and region is significant only in case of Cataluña. For that reason next version of the model contains all variables except gender. In next section it will be investigated whether it was correct to keep region.
+  To determine which variables are significant when constructing generalized regression model, at first all variables were included. Based on the summary and *Pr(>|t|)* value in coefficients table, it can be seen that gender is insignificant, and region is significant only in case of Cataluña. For that reason next version of the model contains all variables except gender. In next section it will be investigated whether it was correct to keep region.
 
 ```{r}
 m3 <- lm(gastos ~ . , data = riesgos_or)
@@ -390,7 +453,8 @@ summary(m3)
 
   Model m3 has value of *Adj. R^2* of about ~76%. This means that it explains $3/4th$ of variability in predicted expenses.
   
-  Median value of residuals again is not close to 0, and shapiro-wilk test confirms that distribution of residuals is significantly different from normal. <span style="color: red;">**So? What now?**</span>
+  Median value of residuals again is not close to 0, and shapiro-wilk test confirms that distribution of residuals is significantly different from normal. 
+<!--<span style="color: red;">**So? What now?**</span>-->
 
 ```{r}
 m3 <- lm(gastos ~ I(edad^2) + bmi  + hijos + fumador + region , data = riesgos_or)
@@ -406,9 +470,11 @@ rse3 <- sigma(m3)/mean(riesgos_or$gastos)
 rse3
 ```
 
-  First and third plot show that for higher expenses residuals grow, meaning model does not satisfy homoscedasticity assumption. <span style="color: red;">**What about linear?**</span>
+  First and third plot show that for higher expenses residuals grow, meaning model does not satisfy homoscedasticity assumption.
+<!--<span style="color: red;">**What about linear?**</span>-->
   
-  QQ-plot confirms that residuals does not follow normal distribution. <span style="color: red;">**So? What now?**</span>
+  QQ-plot confirms that residuals does not follow normal distribution.
+<!--<span style="color: red;">**So? What now?**</span>-->
   
   Last plot shows existance of outliers, however most significant 3 does not differ much from many others.
 
@@ -419,10 +485,10 @@ plot(m3, which=1:4)
 
 ## Models comparison using ANOVA
 
-<span style="color: red;">**ToDo: Use anova to see which model of those created is more interesting.**</span>
-<!-- But how can I use it, if they do not extend each other?!?!?!?! --> 
+<!-- Zrobione --> 
+>*ToDo: Use anova to see which model of those created is more interesting.*
   
-  Anova test confirms that model m2 is better than m1, as well as that model m3 is better than m2. However, in model m3, caltalan region was significant enough to justify its addition to the model, therefore model without it (m3_sr) is better than model that includes it (m3).
+  Anova test confirms that model m2 is better than m1, as well as that model m3 is better than m2. However, in model m3, despite caltalan region being significant enough to justify its addition to the model, model without it (m3_sr) is better than model that includes it (m3).
  
 ```{r}
 anova(m1, m2)
@@ -433,8 +499,25 @@ anova(m3_sr, m3)
  
 # Summary
 
-  From all of the prepared models, m3_sr is the best one. However, it still explains only 75% of variance in predicted value and has error rate of about 44%. Moreover, it's residuals does not follow normal distribution and model does not satisfy  homoscedasticity assumption. <span style="color: red;">**So? What now?**</span>
+  **From all of the prepared models, m3_sr is the best one**. However, it still explains only 75% of variance in predicted value and has error rate of about 44%. Moreover, it's residuals does not follow normal distribution and model does not satisfy  homoscedasticity assumption.
+<!--
+Comments for personal knowledge: PYTANIE 6: Komentarz!
+-->
 
   To construct a better model, possibly removal of more outliers is necessary. However, it was tested that removal of samples with BMI values over 45, and expense values over 25,000 does not improve the model. Only radical filtering for expenses of values below 15,000, which removes smokers and most non-smoker outliers, resulted in model of 90% Adj. R^2. However, that removes important population from the model.
   
-  Therefore, to achieve better model, it would not to be decided to only construct a separate model for non-smokers. To include smokers, possibly more information is required.
+  Therefore, to achieve better model, it may be necessary to construct a separate model for non-smokers only. To include smokers, possibly more information is required.
+
+  As  can be seen on graphs below, there is clear linear relationship for between age and costs both for smokers and non-smokers. If the middle line didn't existed, is should have been easy to create a model based solely on age and smoking predictors. However, based on the analysis of all variables, there is no clear pattern explaining exsistance of mixed line. It may be, that those are outliers, for both smokers and non smokers. However, similar distances between lines, and clear pattern, suggest that there is rather some factor, that was not discovered.
+  
+```{r}
+ggplot(data = riesgos_or, aes(x=edad, y=gastos)) + geom_point(aes(colour=fumador))
+
+ggplot(data = riesgos_or, aes(x=edad, y=gastos)) + geom_point(aes(colour=sexo))
+
+ggplot(data = riesgos_or, aes(x=edad, y=gastos)) + geom_point(aes(colour=bmi))
+
+ggplot(data = riesgos_or, aes(x=edad, y=gastos)) + geom_point(aes(colour=hijos))
+
+ggplot(data = riesgos_or, aes(x=edad, y=gastos)) + geom_point(aes(colour=region))
+```
