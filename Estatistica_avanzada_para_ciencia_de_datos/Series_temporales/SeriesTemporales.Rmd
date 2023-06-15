@@ -11,6 +11,7 @@ output:
     use_bookdown: true
     code_folding: show
     self_contained: true
+  html_document: default  
 ---
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}

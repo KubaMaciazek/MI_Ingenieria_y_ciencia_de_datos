@@ -12,9 +12,9 @@ output:
     use_bookdown: true
     code_folding: show
     self_contained: true
+  html_document: default    # added to knit to html 
   pdf_document:   
     latex_engine: xelatex   # added to knit to pdf 
-  html_document: default    # added to knit to html 
 ---
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -63,6 +63,8 @@ head(data)
 
 # Functionalities
 
+  First basic functionalities are presented. Those include creation of xts objects, and conversion back to raw data frame.
+
 ## Basics
 
 ```{r}
@@ -83,7 +85,8 @@ head(index(x))
 indexClass(x)
 ```
 
-Missing values
+  Following, multiple functions for solving the problem of missing values are presented.
+
 ```{r}
 #Omit NA values in x 
 x_ommited <- na.omit(x)
@@ -98,7 +101,8 @@ x_na_next <- na.locf(x,  fromLast=TRUE)
 x_na_interpolated <- na.approx(x) 
 ```
 
-Other
+  Lastly, some general functions are listed.
+
 ```{r}
 #Value of data_xts in index of data_xts
 head(.indexwday(x))
@@ -112,6 +116,8 @@ str(x)
 ```
 
 ## Data import / export
+
+  XTS objects can not only be created, but also imported and the converted. Following are listed multiple ways to import and export data, including efficient usage of zoo.
 
 ```{r}
 # Convert imported data to xts (needs to contain datetime class variable)
@@ -137,12 +143,14 @@ head(readRDS("xts_RSD_file_name.rds"))
 
 ## Periods and periodicity
 
-Estimate frequency of observations
+  Time series analysis is inherently related to the time space/intervals in which data was observed. Following listed are functions related to periodic nature of TS.
+
+Estimation of frequency and time-span of observations.
 ```{r}
 periodicity(data_xts)
 ```
 
-Convert xts to monthly, yearly OHLC. 
+Conversion of xts to monthly, yearly OHLC. 
 
 OHLC - first (Opening) and last (Close) value from period, plus Highest and Lowest
 ```{r}
@@ -155,13 +163,13 @@ data_xts_yearly <- to.yearly(data_xts)
 data_xts_yearly
 ```
 
-Convert xts to monthly periods, aggregating values by mean.
+Conversion of xts to monthly periods, while aggregating values by mean.
 ```{r}
 data_xts_monthly_mean <- apply.monthly(data_xts, mean)
 tail(data_xts_monthly_mean)
 ```
 
-Remove duplicate times
+Duplicates removal
 ```{r}
 data_xts_unique <- make.index.unique(data_xts,drop=TRUE)
 head(data_xts_unique)
@@ -169,6 +177,8 @@ head(data_xts_unique)
 
 
 ## Visualization
+
+  Finally, this section presents visualization of xts. By nature, xts objects can skip xts in plot.xts, which is required for standard data frames.
 
 ```{r}
 # If plotted object is xts object, simple plot() can be used

@@ -31,6 +31,7 @@ library(TTR)
 library(forecast)
 library(readr)
 library(xts)
+library(tseries)
 ```
 
 # Project description
@@ -76,6 +77,7 @@ plot(xts_daily, main="XTS for daily step")
   Following transformations resulted in 3 new time series. Monthly one, based on 53 months, quarterly one, based on 18 quarters, and yearly one, based on 5 years.
   
   Yearly time series contains only 5 values, therefore will be used only for very general overview. More information will be derived from other two.
+
 ```{r}
 xts_monthly <- apply.monthly(xts_daily, mean)
 nmonths(xts_monthly)
@@ -88,6 +90,8 @@ nyears(xts_yearly)
 ```
 
 # Exploratory analysis
+
+## Initial plotting
 
   Next step was initial plotting of new 3 transformations of TS. From them, following information may be seen:
   
@@ -103,5 +107,137 @@ plot(xts_monthly, main="XTS for monthly step")
 plot(xts_quarterly, main="XTS for quarterly step")
 plot(xts_yearly, main="XTS for yearly step")
 ```
+
+## Data split
+
+  As later in the analysis we would like to conduct some predictions, dataset will be now split. This way remaining data will serve as comparison for predictions. Moreover, for a split, year 2023 will be used as reminding data, which will also exclude problems related to its incomplete data (For only up to the end of May).
   
+  This split will be conducted for monthly time series, on which analysis will focus, as it is already stable and provides more exact information than quarterly one.
+
+```{r}
+xts_monthly_training <- xts_monthly["/2022"]
+# Training TS end
+end(xts_monthly_training)
+
+# Testing TS start
+xts_monthly_testing <- xts_monthly["2023"] 
+start(xts_monthly_testing)
+```
+
+## Basic properties analysis
+
+  In following section trend, seasonality, heteroskedasticity and stationarity willl be discussed. However, that trend is not visible in seasonal plot.
+
+```{r}
+plot(xts_monthly_training, main="XTS for monthly step [training set]")
+
+ts_monthly_training <- ts(xts_monthly_training$value, frequency = 12, start = c(2019, 1))
+ggseasonplot(ts_monthly_training, col = rainbow(4), year.labels = TRUE, continuous = TRUE, main="Monthly seasonal plot")
+```
+
+### Trend
+
+<!--  PYTANIE 0: Jak ma stałą średnią, to chyba nie powinno mieć trendu...? -->
+  From quarterly plot it was said that data may have **slight positive trend**, and long-term increase. However, it is so small, that we can assume there is none.
+
+### Seasonality
+
+  There is a yearly seasonality of data. This pattern is **clearly visible** on seasonal plot.
+  
+### Heteroskedasticity
+
+  Data seems to have similar variability, therefore **does not satisfy this property**.
+
+### Stationarity
+
+  As both variance and mean seem constant, it **satisfies this property**. Moreover, further *Augmented Dickey-Fuller Test* results in very small p-value of 0.01, which confirms stationarity and that time series does not have a unit root.
+
+
+<!-- PYTANIE 1: Cy nie brakuje tego Box.test'u? -->
+```{r}
+adf.test(ts_monthly_training)
+```
+
+## Decomposition
+
+There is no trend.
+
+<!-- 
+decomp <- stl(ts(
+    data = coredata(xts_monthly_training, fmt = FALSE),
+    start = c(2019,1), 
+    end = c(2022,12),
+    frequency = 12
+  ), s.window = "periodic")
+ts_monthly_training_decomposed <- seasadj(decomp)
+-->
+
+```{r}
+plot(decompose(ts_monthly_training))
+```
+
+```{r}
+ggsubseriesplot(ts_monthly_training) +
+  ylab("Pollution") +
+  ggtitle("Seasonal subseries plot: PM 2.5 levels")
+```
+
+<!-- https://www.kaggle.com/code/iamleonie/time-series-interpreting-acf-and-pacf -->
+# ACF and PACF - autocorrelation diagnosis
+
+  Autocorrelation is tested, as it is necessary for Auto-regressive model, therefore model selection depends on it.
+  
+  As ACF cuts of multiple lags (1, 4-7, 11-12) as those are above 95% confidence interval and therefore statistically non-zero. It means that it is highly auto correlated and AR can be used. AM(12) can be used.
+
+```{r}
+  acf(ts_monthly_training)
+```
+  
+  
+  In PACF lag 3 shows strong correlation, therefore AR(3) can be used.
+
+```{r}
+pacf(ts_monthly_training)
+```
+
+# Model estimation and forecasting
+
+  As it was previously proven that time series is stationary and has rather no trend, ARIMA model (which is widely used) can be constructed. However, it is not based on seasonality, so it should be removed (or specified by parameter). Moreover autocorrelation analysis proofed existence of auto correlation, therefore this model should work.
+
+
+
+## Model construction
+
+  Model was constructed using automated method, and resulted in **ARIMA(0,0,0)(1,1,0)**.
+  
+```{r}
+fit_m1 <- auto.arima(ts_monthly_training, seasonal = TRUE)
+fit_m1
+```
+
+  Residuals of the model, not perfectly, but seem to resemble normal distribution, therefore forecasting can be conducted.
+
+```{r}
+par(mfrow=c(2,1))
+tsdisplay(residuals(fit_m1), main = "ARIMA(0,0,0)(1,1,0) - Model Residuals")
+hist(residuals(fit_m1))
+```
+
+## Forecasting
+
+  Using generated model, forecast for year 2023 is conducted. Prediction for the first 5 months seems to follow real values. **Accurate model was generated.**
+
+```{r}
+fcast <- forecast(fit_m1, h = 5)
+
+#par(mfrow=c(2,1))
+plot(fcast)
+plot(xts_monthly, main = "TS reminder")
+```
+<!--
+fcast <- forecast(fit_m1, h = 12)
+plot(fcast, col=rgb(0,0,1,1/4), xlim=c(start(xts_monthly),end(xts_monthly)))
+plot(xts_monthly_testing, col=rgb(1,0,0,1/4), xlim=c(start(xts_monthly),end(xts_monthly)), add=T)
+
+-->
 

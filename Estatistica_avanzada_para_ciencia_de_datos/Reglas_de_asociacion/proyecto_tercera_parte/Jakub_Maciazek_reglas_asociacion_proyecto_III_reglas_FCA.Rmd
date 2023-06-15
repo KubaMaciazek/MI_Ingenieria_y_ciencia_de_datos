@@ -1,0 +1,140 @@
+---
+title: "Reglas de Asociación - Implicaciones"
+description: |
+  Realization of Proyecto III - reglas, FCA.
+author:
+  #"Jakub Maciążek"
+  name: "Jakub Maciążek </br>"
+  affiliation: Faculty of Information and Communication Technology, Wrocław University of Science and Technology
+subtitle: "Proyecto III"
+output:
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+  pdf_document:   
+    latex_engine: xelatex   # added to knit to pdf 
+  html_document: default    # added to knit to html 
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+
+
+
+library(readr)
+library(arules)
+library(arulesViz)
+library(fcaR)
+library(hasseDiagram)
+```
+
+# Project description
+
+**Social Network Analysis**
+
+  For this project we will use the data obtained from Twitter used for a research article that we published in the Knowledge-Based Systems Journal on the topic of social network analysis using FCA. The objective was to identify leaders of the social network.
+  
+  - download dataset
+  - dataset stores topics (rows) treated by means of communication (columns)
+  - process in what you consider (reduce, discretize, group, etc.) - justify if you do it due to excessive computing time, etc.
+  
+**Basic analysis**
+
+  - Extract patterns or association rules using arules
+  - Extract knowledge using fcaR
+  
+  It's not about copy-paste commands. Data analysis involves extracting useful knowledge, drawing conclusions. Extract patterns, visualize, show hidden knowledge with any technique from the themes of implications and association rules.
+
+Explain the steps you are taking.
+
+**Going deeper**
+
+  - Open section for you to think of something interesting that you are able to extract from the dataset analysis using rules or FCA.
+  - Identify media that really act as leaders? either
+  - What are the most important topics? either
+  - Is there interesting knowledge in the lattice? On the left side of the implications? attributes that are repeated a lot in association rules?, …
+ 
+ 
+# Basic analysis
+
+## Initial data analysis
+
+  We will begin with data import.
+  
+```{r}
+sn <- read.csv("S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Reglas_de_asociacion/proyecto_tercera_parte/5000 de 26 medios completo-1.csv",  sep=";")
+head(sn)
+
+rows_labels <- sn[ , c("X")]
+head(rows_labels)
+sn <- subset(sn, select = -c(X) )
+head(sn)
+rownames(sn) <- rows_labels
+head(sn)
+```
+
+  Removal of columns where all values are 0 (Media didn't occure in any topic).
+  
+```{r}
+#sn_processed <- sn[, which(colSums(sn) != FALSE)]
+```
+
+  Given data is already discreet, therefore does not require any transformations, except generation of set of transactions for *arules* analysis.
+  
+```{r}
+#trans1 <- transactions(sn)
+#trans1
+#inspect(trans1)
+```
+  
+## Arules analysis
+
+## Formal Concept Analysis
+
+```{r}
+fc_sn <- FormalContext$new(sn)
+fc_sn$print()
+```
+
+```{r}
+fc_sn$dim()
+
+fc_sn$attributes
+
+fc_sn$objects
+
+fc_sn$plot()
+```
+```{r}
+fc_sn$find_concepts()
+fc_sn$concepts$size()
+head(fc_sn$concepts)
+```
+
+```{r}
+# Wrong version of R
+
+#fc_sn$concepts$plot(object_names = FALSE)
+```
+
+```{r}
+fc_sn$concepts$support()
+
+idx <- which(fc_sn$concepts$support() > 0.2)
+
+sublattice <- fc_sn$concepts$sublattice(idx)
+sublattice
+```
+
+# Deeper analysis
+
+
+
+

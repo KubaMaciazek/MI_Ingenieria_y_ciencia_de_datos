@@ -46,7 +46,7 @@ library('arulesViz')
 
 ```{r carga_datos, echo=TRUE,eval=TRUE,display=TRUE,warning=FALSE}
 # Files - Select file - import OR
-# load("titanic.raw.rdata")
+load("titanic.raw.rdata")
 
 ```
  
