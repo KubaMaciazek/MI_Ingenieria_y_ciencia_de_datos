@@ -1,0 +1,370 @@
+---
+title: "Association Rules - Market Basket Analysis"
+description: |
+  A brief but comprehensive introduction to MBA through examples.
+author:
+  - name: "[Domingo López Rodríguez](https://dominlopez.netlify.app), Ángel Mora, Manuel Ojeda </br>"
+    affiliation: Departamento de Matemática Aplicada, Universidad de Málaga
+subtitle: "Ingeniería y Ciencia de Datos I"
+output: 
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 7,
+                      fig.height = 5,
+                      collapse = TRUE)
+```
+
+# Introduction
+
+- Unsupervised learning: a technique that allows learning from observations to extract patterns, trends and make predictions - **without training**. 
+- Among the most relevant problems - **prediction of customer behaviour, shopping trends**: online shops, online services offering music, movies, etc. 
+- Current reality is that there is a lot of competition, many similar services, online marketplaces, etc.
+- Objective: **Attracting customers is the key**. 
+- Means: data collected from consumers, service users, consumer characteristics extracted from the collected data, previous purchase or usage patterns, etc.
+- Tools: Data Science methods - **search for frequent patterns, rules, etc.**.
+
+Methods used in this area should analyse stored data to design recommender systems to:
+
+- Help personalise services and the shopping experience, guessing and suggesting shopping trends from *likes, dislikes*. 
+- Control the peak hours of services.
+- Analyse combinations of products that people tend to buy together.
+- Analyse reviews and prices that competitors offer for the same products.
+
+The problems in this area arise from the so-called **Market Basket Analysis** which deals with how to make product-based recommendations. Solutions for this problem can be used in other similar problems: recommendations of people's interests, etc.
+
+The most important techniques are:
+
+- Evaluation of the contingency matrix of the products.
+- Generation of frequent itemsets.
+- Extraction of association rules.
+
+# Detecting and predicting trends
+
+- Trend: specific pattern or buying and selling behaviour that appears over a period of time in a shop. 
+- How to detect: Store all transactions that take place in the shop.
+  * items purchased
+  * stocks
+  * combinations of items bought together
+  * transaction of each sale made
+- How to process the data: 
+  * pre-process
+  * normalise
+  * aggregate
+- Apply algorithms: spot patterns and trends.
+- Recommend: use patterns and trends to suggest new purchases.
+
+The main method to achieve all this is based on the so-called **Market Basket Analysis** problem.  These methods are based on probability-based statistics and probabilistic notions such as:
+  * support
+  * confidence
+  * lift, etc.
+  
+Objective: **Which items (products) have been purchased most frequently**?
+
+
+# Exploring the `Adult` dataset
+
+```{r,echo=TRUE}
+library(arules)
+data("Adult")
+length(Adult)
+dim(Adult)
+Adult
+inspect(Adult[1:2])
+```
+ 
+## Association rules
+
+To compute the association rules: 
+
+```{r,echo=TRUE}
+data("Adult")
+rules <- apriori(Adult, parameter = list(
+  supp = 0.5, conf = 0.9,
+  target = "rules"
+))
+summary(rules)
+inspect(head(rules))
+```
+
+## `apriori()` parameters
+
+> parameter: list of restrictions on the extraction process
+
+  - *supp* or *support*
+  - *conf* or *confidence*
+  - *minlen* - minimum number of items in itemset
+  - *maxlen* - maximum number of items in itemset
+  - *maxtime* - time limit
+  - *target* - indicate what kind of associations we want to extract: "rules", "frequent itemsets", "maximally frequent itemsets", "closed frequent itemsets".
+   
+```{r,echo=TRUE}
+rules <- apriori(Adult, parameter = list(supp = 0.5, conf = 0.9, minlen = 2))
+inspect(tail(rules))
+patterns <- apriori(Adult, parameter = list(supp = 0.5, conf = 0.9, maxlen = 10, target = "frequent itemsets"))
+summary(patterns)
+inspect(tail(patterns))
+```
+
+                 
+> appearance: specify restrictions on the extraction of associations. 
+
+```{r,echo=TRUE}
+rules1 <- apriori(Adult,
+  parameter = list(supp = 0.5, conf = 0.9),
+  appearance = list(items = c("income=small", "sex=Male"))
+)
+
+inspect(head(rules1))
+
+rules2 <- apriori(Adult,
+  parameter = list(supp = 0.5, conf = 0.9),
+  appearance = list(none = c("income=small", "sex=Male"))
+)
+
+inspect(head(rules2))                             
+```
+
+ 
+
+
+# Exploring the `AdultUCI` dataset
+
+It contains the data from the dataset originally called 'Census Income' Database in data.frame format.  
+ 
+The `Adult` dataset from the previous section has the data prepared for the computation of the rules. 
+The data type of this dataset is **transactions** which is suitable for the arules package. 
+
+The `AdultUCI` dataset:
+
+```{r,echo=TRUE}
+library(arules)
+data("AdultUCI")
+str(AdultUCI)
+```
+
+For most datasets a first preprocessing step is necessary. 
+
+In the following, we will apply preprocessing to `AdultUCI` until it is converted into transactions that arules handles properly. 
+
+## Discretisation of items
+
+> Delete some columns that are not interesting: `fnlwgt`, `education-num`
+
+```{r,echo=TRUE}
+AdultUCI$fnlwgt <- NULL
+## o  AdultUCI[["fnlwgt"]] <- NULL
+
+AdultUCI$`education-num` <- NULL
+```
+
+> Convert to discrete numerical values: `age`,  `hours-per-week`, `capital-gain`, `capital-loss`.
+
+We will use `cut()`, `ordered()` commands to do this. Here is an example of how these two commands work:
+```{r,echo=TRUE}
+# ejemplo de funcionamiento de cut y ordered
+v <- 1:100
+v2 <- cut(v, 
+          c(0, 25, 50, 75, 100), 
+          labels = c("low", "medium", "high", "veryhigh"))
+# ?ordered
+v3 <- ordered(v2)
+```
+
+
+Aplicamos estas funciones a `AdultUCI`:
+
+```{r,echo=TRUE}
+
+AdultUCI$age <- ordered(cut(AdultUCI[["age"]], c(15, 25, 45, 65, 100)),
+  labels = c("Young", "Middle-aged", "Senior", "Old")
+)
+
+AdultUCI[["hours-per-week"]] <- ordered(cut(
+  AdultUCI[["hours-per-week"]],
+  c(0, 25, 40, 60, 168)
+),
+labels = c("Part-time", "Full-time", "Over-time", "Workaholic")
+)
+
+AdultUCI[["capital-gain"]] <- ordered(cut(
+  AdultUCI[["capital-gain"]],
+  c(
+    -Inf, 0, median(AdultUCI[["capital-gain"]][AdultUCI[["capital-gain"]] > 0]),
+    Inf
+  )
+), labels = c("None", "Low", "High"))
+
+AdultUCI[["capital-loss"]] <- ordered(cut(
+  AdultUCI[["capital-loss"]],
+  c(
+    -Inf, 0, median(AdultUCI[["capital-loss"]][AdultUCI[["capital-loss"]] > 0]),
+    Inf
+  )
+), labels = c("None", "Low", "High"))
+```
+
+  
+We run `apriori()`:
+
+```{r,echo=TRUE}
+reg <- apriori(AdultUCI)
+inspect(head(reg))
+```
+
+## *transactions* data type
+
+See [this link](https://www.r-bloggers.com/data-frames-and-transactions/).
+
+We compare `AdultUCI` that we have processed with `Adult.`.
+
+```{r,echo=TRUE}
+Adult1 <- as(AdultUCI, "transactions")
+class(Adult1)
+length(Adult1)
+dim(Adult1)
+Adult1
+inspect(Adult1[1:2])
+```
+
+
+
+```{r,echo=TRUE}
+data("Adult")
+class(Adult)
+length(Adult)
+dim(Adult)
+Adult
+inspect(Adult[1:2])
+```
+
+# Methods of `arules`.
+
+* `summary()`: Overview of the set of rules. 
+* `length()`: Number of rules. 
+* `items()`: Items involved. 
+* `sort()`: Sort 
+* `subset()`: Items involved.  (see `help(subset)`). Select rules that meet certain criteria. 
+* `union()`, `intersect()`, `setequal()`, `match()`  (use `help(xxx)`).  
+* `write()`: Writing more properly formatted rules.
+
+
+Operations with rules:
+
+```{r,echo=TRUE, eval=FALSE}
+data("Adult")
+r1 <- apriori(Adult[1:1000], parameter = list(support = 0.5))
+r2 <- apriori(Adult[1001:2000], parameter = list(support = 0.5))
+# Convertir en un dataframe
+dfr1 <- DATAFRAME(r1)
+r_comb <- c(r1, r2)
+duplicated(r_comb)
+intersect(r1, r2)
+union(r1, r2)
+lhs(reglas1)
+rhs(reglas1)
+class(lhs(reglas1))
+```
+
+
+# `arulesViz` 
+ 
+Let's use the `Groceries` dataset to look at the most interesting association rule display commands.  
+
+We extract the rules:
+```{r,echo=TRUE}
+library(arules)
+library(arulesViz)
+data(Groceries)
+rules <- apriori(Groceries, parameter = list(support = 0.001, confidence = 0.5))
+rules
+inspect(head(rules))
+```
+
+The basic rule visualisation command is `plot()`. We show different options for using `plot()` (colours).
+```{r,echo=TRUE}
+plot(rules)
+library(colorspace)
+plot(rules, control = list(col = sequential_hcl(100)))
+plot(rules, col = sequential_hcl(100))
+plot(rules, col = grey.colors(50, alpha = .8))
+```
+
+Interactive display option:
+
+```{r,echo=TRUE,eval=FALSE}
+# Ejecutar en vuestro ordenador
+sel <- plot(rules, engine = "interactive")
+plot(rules, engine = "htmlwidget")
+```
+
+Matrix representation of rules:
+
+```{r,echo=TRUE}
+subrules <- subset(rules, lift > 8)
+subrules
+plot(subrules, method = "matrix")
+plot(subrules, method = "matrix", engine = "3d")
+plot(subrules, method = "matrix", 
+     measure = "lift",
+     shading = "confidence")
+```
+
+
+And interactive:
+
+```{r,echo=TRUE,eval=FALSE}
+# Ejecutar en vuestro ordenador
+plot(subrules, method = "matrix", engine = "interactive")
+plot(subrules, method = "matrix", engine = "htmlwidget")
+```
+
+Matrix representation showing the items:
+
+```{r,echo=TRUE,eval=FALSE}
+# Ejecutar en vuestro ordenador
+plot(subrules, method = "grouped matrix")
+plot(subrules,
+  method = "grouped matrix",
+  col = grey.colors(10),
+  gp_labels = gpar(col = "blue", cex = 1, fontface = "italic")
+)
+# sel <- plot(rules, method="grouped", engine = "interactive")
+```
+
+Network representation of rules (only for small sets of rules):
+
+```{r,echo=TRUE}
+subrules2 <- sample(subrules, 5)
+plot(subrules2, method = "graph")
+plot(subrules2,
+  method = "graph",
+  nodeCol = grey.colors(10), edgeCol = grey(.7), alpha = 1
+)
+```
+
+The `Graphviz` package allows for better visualisation:
+  
+```{r,echo=TRUE}
+plot(subrules2, method = "graph", engine = "graphviz")
+```
+
+It allows dynamic visualisation:
+```{r,echo=TRUE,eval=FALSE}
+# Ejecutar en local
+plot(subrules2, method = "graph", engine = "htmlwidget")
+plot(subrules2,
+  method = "graph", engine = "htmlwidget",
+  igraphLayout = "layout_in_circle"
+)
+```
+
+ 

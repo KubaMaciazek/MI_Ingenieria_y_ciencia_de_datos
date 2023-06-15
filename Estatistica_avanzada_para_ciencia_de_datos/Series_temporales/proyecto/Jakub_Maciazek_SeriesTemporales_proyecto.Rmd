@@ -1,0 +1,107 @@
+---
+title: "Series Temporales"
+description: |
+  Realization of time series project for the topic.
+author:
+  #"Jakub Maciążek"
+  name: "Jakub Maciążek </br>"
+  affiliation: Faculty of Information and Communication Technology, Wrocław University of Science and Technology
+subtitle: "Proyecto"
+output:
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+  pdf_document:   
+    latex_engine: xelatex   # added to knit to pdf 
+  html_document: default    # added to knit to html 
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+
+
+library(TTR)
+library(forecast)
+library(readr)
+library(xts)
+```
+
+# Project description
+
+Search for a dataset (with temporary information) related to one of the great problems in the world today, which has been published in 2021 or 2022.
+  
+Conduct data analysis, extract useful knowledge and draw conclusions. Extract trends, conclusions, etc. with any technique seen in class.
+  
+Explain everything.
+
+
+# Data source
+
+  As one of the great problems of current times are health problems related to air pollution, I have decided to analyze information about PM 2.5 levels in my university home city, as among air pollution,  this one is the most detrimental for human health.
+  
+  Historic data was sourced from governmental agency "Main inspectorate of environmental protection" at following address: https://powietrze.gios.gov.pl/pjp/archives.
+
+```{r}
+data_daily <- read.csv("S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Series_temporales/proyecto/wroclaw_pm25_2019_2023.csv")
+head(data_daily)
+```
+
+# Basic data overview
+
+  As following paper focuses on time series analysis, xts object will be used. (In order to do that, dates in string format were first converted to date class.)
+
+```{r}
+data_daily$date <- as.Date(data_daily$date)
+xts_daily <- as.xts(data_daily)
+head(xts_daily)
+```
+
+Timeseries contains information for days from 2019-01-01 to 2023-05-31.
+```{r}
+periodicity(xts_daily)
+```
+
+  As can be seen on below graph, daily time series is very volatile. Therefore analysis will be conducted on time series based on monthly, quarterly or yearly periods.
+```{r}
+plot(xts_daily, main="XTS for daily step")
+```
+
+  Following transformations resulted in 3 new time series. Monthly one, based on 53 months, quarterly one, based on 18 quarters, and yearly one, based on 5 years.
+  
+  Yearly time series contains only 5 values, therefore will be used only for very general overview. More information will be derived from other two.
+```{r}
+xts_monthly <- apply.monthly(xts_daily, mean)
+nmonths(xts_monthly)
+
+xts_quarterly <- apply.quarterly(xts_daily, mean)
+nquarters(xts_quarterly)
+
+xts_yearly <- apply.yearly(xts_daily, mean)
+nyears(xts_yearly)
+```
+
+# Exploratory analysis
+
+  Next step was initial plotting of new 3 transformations of TS. From them, following information may be seen:
+  
+  - starting with last one, in yearly plot no clear tendency can be seen. This however may be caused by partial data for the last year, and covid lock downs in year 20220 that may have decreased pollution (Those anomalies are also seen in daily plot).
+  
+  - Quarterly plot shows, that there may be a slight positive tendency. It also shows that seasonality of data may exists.
+  
+  - Monthly plot further shows seasonality of the data. It also shows that besides pollution being higher in the winter and lower during summer, for 4 consecutive years at the turn of the year (all visible ones), pollution declines in the middle of the winter. This may be caused by Christmas break and holidays, that result in less working activity, and lack of students in the city.
+
+```{r}
+par(mfrow=c(3,1))
+plot(xts_monthly, main="XTS for monthly step")
+plot(xts_quarterly, main="XTS for quarterly step")
+plot(xts_yearly, main="XTS for yearly step")
+```
+  
+

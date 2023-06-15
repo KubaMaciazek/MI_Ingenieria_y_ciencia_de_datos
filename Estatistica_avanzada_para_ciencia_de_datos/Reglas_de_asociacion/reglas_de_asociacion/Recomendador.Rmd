@@ -1,0 +1,168 @@
+---
+title: "Association Rules - Recommender System"
+description: |
+  A brief but comprehensive introduction to Recomender systems.
+author:
+  - name: "[Domingo López Rodríguez](https://dominlopez.netlify.app), Ángel Mora, Manuel Ojeda </br>"
+    affiliation: Departamento de Matemática Aplicada, Universidad de Málaga
+subtitle: "Ingeniería y Ciencia de Datos I"
+output: 
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+```
+
+# Analysis of relationships between songs  
+ 
+ 
+## Dataset `lastfm`
+
+The `lastfm.csv` dataset includes transactions collected from an online radio station that stores user ID, artist, user gender and country. 
+
+**Objective**: To build a system for recommending music groups to users from the above dataset.  
+
+```{r,echo=TRUE}
+library(arules)
+lastfm <- read.csv("lastfm.csv")
+lastfm[1:20, ]
+length(lastfm$user) ## 289,955 filas
+class(lastfm$user)
+# We need to convert this attribute to a factor in order to be able to analyse it with package {"arules"}.
+
+lastfm$user <- factor(lastfm$user)
+# Run on your computer
+# levels(lastfm$user)  ## 15,000 users
+# levels(lastfm$artist)  ## 1,004 artists
+```
+
+## Dataset rules
+
+We call `apriori()`:
+
+```{r, echo=TRUE}
+reglas1 <- apriori(lastfm, parameter = list(support = .01, confidence = .5))
+inspect(reglas1)
+```
+
+Comment: In previous versions of `arules` the previous command gave an error. We had to convert discrete variables to factor. It is a *live* package that is evolving day by day.
+
+<!-- El dataset no es de tipo transacciones.  -->
+
+<!-- ## Preprocesamiento -->
+
+<!-- Realizamos el preprocesamiento para poder usar apriori.   -->
+
+
+<!-- ```{r} -->
+<!-- lastfm$sex <- factor(lastfm$sex) -->
+<!-- lastfm$country <- factor(lastfm$country) -->
+
+<!-- reglas1 <- apriori(lastfm, parameter=list(support=.01, confidence=.5)) -->
+<!-- inspect(head(reglas1)) -->
+<!-- ``` -->
+
+**What is the recommendation we can get with these rules?
+
+It is not the kind of rules we want to get for our recommender system. 
+ 
+## Rules for making recommendations
+
+
+The data must be manipulated in order to find what we are interested in.  We will use the commands: `split()`, `lapply()`.
+
+First I keep a list of what each user listens to:
+
+```{r, echo=TRUE}
+lista.musica.por.usuario <- split(x = lastfm[, "artist"], f = lastfm$user)
+lista.musica.por.usuario[1:2]
+```
+
+Next: 
+
+- A group/singer could be in a user twice: remove repeats
+- Convert to transaction format
+- Look at the music listened to by the first users
+
+```{r, echo=TRUE}
+## Remove duplicates
+lista.musica.por.usuario <- lapply(lista.musica.por.usuario, unique)
+
+# We convert the music list into transactions.
+lista.musica.por.usuario1 <- as(lista.musica.por.usuario, "transactions")
+
+lista.musica.por.usuario[1:5]
+```
+
+We visualise what we have achieved so far:
+
+```{r, echo=TRUE}
+str(lista.musica.por.usuario1)
+write(head(lista.musica.por.usuario1))
+write(head(lista.musica.por.usuario1), format = "single")
+```
+
+It is a list of transactions - data type defined in arules. We calculate the relative frequency of the songs listened to:
+
+```{r, echo=TRUE}
+itfreq1 <- itemFrequency(lista.musica.por.usuario1)
+head(itfreq1)
+```
+
+`itfreq1`:
+
+- is a numeric vector 
+- the names of the list (`names(itfreq)` --- the names of each group )
+- each position therefore is the frequency of the group of that position
+
+Draw the frequencies using the list of transactions obtained:
+
+```{r, echo=TRUE}
+itemFrequencyPlot(lista.musica.por.usuario1, support = .08, cex.names = 1)
+```
+
+And we obtain the association rules with support 0.1 and confidence 0.5:
+
+```{r, echo=TRUE}
+reglas2 <- apriori(lista.musica.por.usuario1,
+  parameter =
+    list(support = .01, confidence = .5)
+)
+reglas2
+inspect(reglas2)
+```
+
+# Recommendation system
+
+First we keep the most interesting rules. We filter out those with lift greater than 1:
+
+```{r, echo=TRUE}
+inspect(subset(reglas2, subset = lift > 1))
+```
+
+We order by confidence these rules above:
+
+```{r, echo=TRUE}
+inspect(sort(subset(reglas2, subset = lift > 1), by = "confidence"))
+
+```
+
+**Recommendation to users who listen to Coldplay?**:
+```{r, echo=TRUE}
+r1 <- subset(reglas2, subset = lhs %ain%
+  c("coldplay"))
+inspect(r1)
+```
+
+
+Try other groups. 

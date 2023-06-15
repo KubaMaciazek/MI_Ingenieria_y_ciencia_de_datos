@@ -1,0 +1,208 @@
+---
+title: "Project - Association Rules"
+description: |
+  A project analyzing the Titanic dataset using association rules.
+author:
+  - name: "nombre de estudiante"
+    affiliation: Correo de estudiante
+subtitle: "Ingeniería y Ciencia de Datos I"
+output: 
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+```
+
+# Analysing the `Titanic` dataset: 
+ 
+Perform the following sections with the indicated dataset. 
+
+Create a Notebook with the commands to solve each section. In this Notebook the results are shown (informing which should be the output of R - approximately).
+ 
+> Enter commands to load the packages needed to get the association rules and to be able to display association rules: 
+
+```{r carga_librerias, echo=TRUE,eval=TRUE,display=TRUE,warning=FALSE}
+# Instalar sólo la primera vez:
+
+#install.packages('arules' , repos="http://cran.rstudio.com")
+#install.packages('arulesViz', repos="http://cran.rstudio.com" )
+
+library('arules')
+library('arulesViz')
+ 
+```
+ 
+> Import the `Titanic` dataset (use `load()`).
+
+```{r carga_datos, echo=TRUE,eval=TRUE,display=TRUE,warning=FALSE}
+# Files - Select file - import OR
+# load("titanic.raw.rdata")
+
+```
+ 
+> Use `apriori` algorithm to extract association rules using default parameters. Measure the time it takes to generate the rules (command `system.time()`). Display the first 10 rules.
+
+
+```{r apriori_systemtime, echo=FALSE,eval=TRUE,display=TRUE}
+
+R1 <- apriori(titanic.raw)
+
+ system.time(R1 <- apriori(titanic.raw))
+inspect(R1[1:10])
+```
+
+
+> Use `apriori()` algorithm to extract association rules with `Survived` item on the right (with both Yes and No values), and using as parameters: support 0.005, confidence 0.8.  
+
+```{r}
+
+```
+
+
+> Add to the call to `apriori()` the right parameter to not give the rule mining report (`verbose`). 
+
+```{r}
+
+```
+
+
+> Measure the time it takes to generate the rules (`system.time()`). 
+
+> Minimal Lenght 2, "Survived=Yes" in the right of the rules. Support 0.001. Confidence 1).  Display the last 15 rules.
+
+
+```{r}
+
+```
+
+
+> Sort the rules obtained by lift Display them.
+
+```{r, echo=FALSE,eval=TRUE,display=TRUE}
+ 
+
+```
+
+> Find association rules by searching for interesting values on the left/right. At least three different searches. Use `subset()`.
+
+```
+
+# Extract all rules and use **subset** for filtering.
+
+reglas <- apriori()
+reglas1 <- subset()
+reglas2 <- subset()
+reglas3 <- subset()
+
+```
+
+Templates: 
+
+```{r,eval=FALSE,echo=FALSE}
+R1.sub <- subset(R1, subset = rhs %in% c("Age=Adult") 
+    & lift > 2)
+
+
+R2.sub <- subset(R1, subset = lhs %ain% 
+    c("Age=Adult", "Class=3rd"))
+inspect(R2.sub)
+
+titanicTrans <- transactions(titanic.raw)
+
+# contain age=Adult (see help page for class itemMatrix)
+inspect(titanicTrans[1:10])
+
+cuantos <- titanicTrans %in% c("Age=Adult","Age=Child")
+sum(cuantos)
+
+# find all transactions which contain items that partially match "age=" (all here).
+
+titanicTrans[1:10] %pin% c("sex=M")
+
+## find all transactions that only include the item "age=Middle-aged" (none here).
+
+titanicTrans[1:10] %oin% "Age=Adult"
+
+## find al transaction which contain both items "age=Middle-aged" and "sex=Male"
+
+# error???
+titanicTrans[1:10] %ain% c("Age=Child", "sex=Male")
+
+```
+
+Exercises:
+
+> `rules1` are people with crew and no survived 
+
+```{r}
+
+```
+
+
+> `rules2` are people with female and no survived 
+```{r}
+
+```
+
+
+> Join `rules1` and `rules2`. 
+
+```{r}
+
+```
+
+> Make the intersection of `rules1` and `rules2`.
+
+```{r}
+
+```
+
+> Find duplicates in the union of the rules and remove them from the rule set.
+
+```{r}
+
+```
+
+
+> Visualise with some of the   functions in `arulesViz`:
+  
+
+
+```{r}
+ 
+```
+
+  
+  
+# Redundant rules 
+
+
+>> Compute non redundant rules  
+
+```{r}
+
+```
+
+
+Sort by confidence:
+
+```{r, echo=TRUE,eval=TRUE,display=TRUE}
+ 
+```
+
+
+> Find rules that express knowledge about the surviving children.  The minimum length on the left-hand side must be 2. Visualise these rules with `arulesViz`.
+
+
+> Look in the help or on the internet how to use `discretize`  and apply it in Iris dataset.  
+

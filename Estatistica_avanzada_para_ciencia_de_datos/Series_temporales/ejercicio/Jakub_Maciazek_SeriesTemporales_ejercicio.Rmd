@@ -1,0 +1,187 @@
+---
+title: "Series Temporales"
+description: |
+  Realization of time series exercise.
+author:
+  #"Jakub Maciążek"
+  name: "Jakub Maciążek </br>"
+  affiliation: Faculty of Information and Communication Technology, Wrocław University of Science and Technology
+subtitle: "Mini-tutorial on the use of zoo and xts packages"
+output:
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+  pdf_document:   
+    latex_engine: xelatex   # added to knit to pdf 
+  html_document: default    # added to knit to html 
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+
+
+library(TTR)
+library(forecast)
+library(readr)
+library (dplyr)
+```
+
+# Exercise description
+
+  Make an .rmd with a mini-tutorial on the use of the zoo and xts packages, applying them to a time series (dataset with data from Spain) that you search on the web about electricity consumption, product consumption, etc.
+
+# Data source
+
+  Following tutorial will be based on data related to electricy consumption, specifically daily energy SPOT price, from the years 2014 - 2018.
+  
+  Dataset source: https://www.kaggle.com/datasets/manualrg/spanish-electricity-market-demand-gen-price.
+
+```{r}
+#Load data
+
+spain_energy_market <- read.csv("S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Series_temporales/ejercicio/spain_energy_market.csv")
+spain_SPOT_prices <- filter(spain_energy_market, name=='Precio mercado SPOT Diario ESP')
+head(spain_SPOT_prices)
+
+keeps <- c("datetime", "value")
+data <- spain_SPOT_prices[keeps]
+head(data)
+```
+  
+# Brief package introduction
+
+**xts** - eXtensible Time Series
+
+**zoo** object - index + matrix -> observation in time
+
+# Functionalities
+
+## Basics
+
+```{r}
+#Import package
+library(xts)
+
+# Construct xts
+x <- xts(data$value, order.by = as.Date(data$datetime))
+head(x)
+
+# Get back raw matrix
+head(coredata(x, fmt = FALSE))
+
+# Extract index/time
+head(index(x))
+
+# Class attributes - index class
+indexClass(x)
+```
+
+Missing values
+```{r}
+#Omit NA values in x 
+x_ommited <- na.omit(x)
+
+#Fill missing values in x using last observation
+x_na_last <-na.locf(x)
+
+#Fill missing values in x using next observation
+x_na_next <- na.locf(x,  fromLast=TRUE)
+
+#Interpolate NAs
+x_na_interpolated <- na.approx(x) 
+```
+
+Other
+```{r}
+#Value of data_xts in index of data_xts
+head(.indexwday(x))
+
+#First and last observation
+start(x)
+end(x)
+
+# Data structure of x
+str(x)
+```
+
+## Data import / export
+
+```{r}
+# Convert imported data to xts (needs to contain datetime class variable)
+data$datetime <- as.Date(data$datetime)
+data_xts <- as.xts(data)
+head(data_xts)
+
+# class type
+class(data_xts)
+```
+
+```{r}
+#Read data using zoo
+#as.xts(read.zoo("file_name"))
+
+# Save to external file
+write.zoo(data_xts, file = "xts_file_name.csv", sep = "'")
+
+# Save for R use - optimized for objects like xts -> fast read
+saveRDS(data_xts, "xts_RSD_file_name.rds")
+head(readRDS("xts_RSD_file_name.rds"))
+```
+
+## Periods and periodicity
+
+Estimate frequency of observations
+```{r}
+periodicity(data_xts)
+```
+
+Convert xts to monthly, yearly OHLC. 
+
+OHLC - first (Opening) and last (Close) value from period, plus Highest and Lowest
+```{r}
+data_xts_monthly <- to.monthly(data_xts)
+head(data_xts_monthly)
+#Count months
+nmonths(data_xts_monthly)
+
+data_xts_yearly <- to.yearly(data_xts)
+data_xts_yearly
+```
+
+Convert xts to monthly periods, aggregating values by mean.
+```{r}
+data_xts_monthly_mean <- apply.monthly(data_xts, mean)
+tail(data_xts_monthly_mean)
+```
+
+Remove duplicate times
+```{r}
+data_xts_unique <- make.index.unique(data_xts,drop=TRUE)
+head(data_xts_unique)
+```
+
+
+## Visualization
+
+```{r}
+# If plotted object is xts object, simple plot() can be used
+plot.xts(data_xts, main = "Main title")
+plot(data_xts_monthly_mean)
+lines(data_xts_monthly_mean, col = "green", lwd = 2) #lwd - line fitnes adjustment
+```
+
+
+<!--
+Course:
+
+  - https://www.datacamp.com/cheat-sheet/xts-cheat-sheet-time-series-in-r
+  - R tutorial: xts & zoo for time series analysis: https://www.youtube.com/watch?v=qXShXRdYofo
+  
+-->

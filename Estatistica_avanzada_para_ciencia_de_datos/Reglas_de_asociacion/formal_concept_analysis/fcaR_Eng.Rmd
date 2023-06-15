@@ -1,0 +1,502 @@
+---
+title: "Formal Concept Analysis in R"
+description: |
+  A brief but comprehensive introduction to the fcaR package.
+author:
+  - name: "[Domingo López Rodríguez](https://dominlopez.netlify.app), Ángel Mora, Manuel Ojeda </br>"
+    affiliation: Departamento de Matemática Aplicada, Universidad de Málaga
+subtitle: "Ingeniería y Ciencia de Datos I"
+output: 
+  rmdformats::downcute:
+    use_bookdown: true
+    code_folding: show
+    self_contained: true
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+library(ggplot2)
+library(latex2exp)
+knitr::opts_chunk$set(fig.align = "center",
+                      fig.width = 5,
+                      fig.height = 4,
+                      collapse = TRUE)
+```
+
+# `fcaR`
+ 
+ 
+
+## Formal Concept Analysis in `R`
+
+FCA is a mathematical tool based on lattice theory and logic. **It is the forgotten sister in data science.**
+
+However, FCA allows to discover hidden knowledge in a dataset in a similar (or even more powerful) way than some very famous Machine Learning techniques such as, for example, association rules. 
+
+Why develop an __`R`__ package for FCA?
+
+- Helping to disseminate FCA as a new knowledge discovery tool 
+- Help to integrate methods from different areas that do not really have empty intersection 
+- Help the more theoretical FCA community to calculate concepts, implications, minimal generators, etc. 
+- Applying FCA to real problems: development of recommender systems in tourism and medicine   
+
+For us it is useful to: 
+
+- disseminate our theoretical works to a wider audience not only in the FCA community
+- close the cycle: **theory-practice-theory**.
+
+## Any rule management packages?
+
+- __`arules`__
+- __`frbs`__  
+- __`RKEEL`__  
+ 
+We highlight __`arules`__ well known in the data science community for extracting and managing patterns and association rules. 		 
+
+
+## The __`fcaR`__ package
+
+The package is in a stable phase in a repository on [Github](https://github.com/Malaga-FCA-group/fcaR) and on CRAN. 
+ 
+- Unit tests
+- Bullets with demos
+- Status: 
+
+  * lifecycle: stable
+  * CRAN: 1.1.1
+  * build: passing 
+  * downloads: ~13K
+- Installation: 
+```{r,eval=FALSE}
+# Latest version
+remotes::install_github("Malaga-FCA-group/fcaR", build_vignettes = TRUE)
+
+# Stable version
+install.packages("fcaR")
+```
+ 
+
+The package is also available from CRAN.
+
+```{r cran1, fig.align="center", out.width="50%", echo = FALSE}
+knitr::include_graphics("./images/cran.png")
+```
+  
+## Extensibility
+
+- Object-oriented programming: extensible classes.
+- Use of registry to extend functionality: 
+    * Redundancy elimination methods.
+    * Methods for constructing the concept lattice.
+    * Techniques for finding the implication base.
+
+
+#  `fcaR`
+
+The first important issue regarding transaction datasets used in association rules: in association rules the datasets are either binary or with categorical or discrete information that can be passed to binary. 
+
+**FCA is able to work with binary or fuzzy information stored in the datasets and extract implications (association rules with confidence one) and also a concept lattice.** 
+
+## Formal Context 
+
+We will use the following binary dataset called `planets` which appears in:
+
+> Wille R (1982). “Restructuring Lattice Theory: An Approach Based on Hierarchies of Concepts.” In Ordered Sets, pp. 445–470. Springer.
+
+```{r echo = FALSE}
+objects <- c("Mercury", "Venus", "Earth", "Mars",
+             "Jupiter", "Saturn", "Uranus", "Neptune",
+             "Pluto")
+
+attributes <- c("small", "medium", "large",
+                "near", "far",
+                "moon", "no_moon")
+
+planets <- matrix(0, nrow = length(objects),
+                  ncol = length(attributes))
+
+rownames(planets) <- objects
+colnames(planets) <- attributes
+
+planets["Mercury", c("small", "near", "no_moon")] <- 1
+planets["Venus", c("small", "near", "no_moon")] <- 1
+planets["Earth", c("small", "near", "moon")] <- 1
+planets["Mars", c("small", "near", "moon")] <- 1
+planets["Jupiter", c("large", "far", "moon")] <- 1
+planets["Saturn", c("large", "far", "moon")] <- 1
+planets["Uranus", c("medium", "far", "moon")] <- 1
+planets["Neptune", c("medium", "far", "moon")] <- 1
+planets["Pluto", c("small", "far", "moon")] <- 1
+```
+
+```{r}
+knitr::kable(planets, format = "html", booktabs = TRUE)
+```
+ 
+
+We create a formal context from the above dataset using the `fcaR` package: 
+```{r echo = TRUE, warning=FALSE, message=FALSE}
+library(fcaR)
+fc_planets <- FormalContext$new(planets)
+fc_planets$print()
+```
+
+- In the formal context `fc_planets` we have some properties and methods that can be used to extract hidden knowledge in the dataset. 
+
+```{r echo = TRUE}
+fc_planets$dim()
+fc_planets$attributes
+fc_planets$objects
+fc_planets$plot()
+```
+
+For Latex users: 
+
+```{r}
+fc_planets$to_latex()
+```
+
+## Concepts
+
+We can calculate concepts using Ganter and Wille's **NextClosure** algorithm, implemented in the `find_concepts()` method, which is developed in `C` behind `R`. 
+
+```{r echo = TRUE}
+fc_planets$find_concepts()
+fc_planets$concepts$size()
+head(fc_planets$concepts)
+```
+
+* FCA showed that there is an ordering relationship in the concepts.
+* A concept lattice (concept taxonomy) has actually been calculated.
+
+## Plot of the concept lattice
+   
+
+```{r echo = TRUE}
+fc_planets$concepts$plot(object_names = FALSE)
+fc_planets$concepts$sub(2)
+```
+
+There is a set of planets with common characteristics - we have discovered hidden knowledge: does this concept already have a name?
+
+A concept $(A, B)$, contains a set of objects $A$ (the _extent_) and a set of attributes $B$ (the _intent_) such that: 
+
+* the _extent_ $A$ consists of all objects that share the attributes in $B$. 
+* the _intent_ $B$ consists of all the attributes shared by the objects in $A$.
+
+
+## Closures
+ 
+The basic operation in FCA is the calculation of closures from a set of attributes or from a set of objects. Two mathematical functions (two derivation operators) are used, which we have called in our library `extent()` (from objects), `intent()` (from attributes).
+
+The `extent()` of a set of objects is the set of their common attributes:
+
+```{r}
+# Define a set of objects
+S <- Set$new(attributes = fc_planets$objects)
+S$assign(Earth = 1, Mars = 1)
+S
+
+# Compute the intent of S
+fc_planets$intent(S)
+```
+
+With this we can see what common properties Earth and Mars have in common. 
+
+Analogously, the `intent()` of an attribute set is the set of objects that possesses all the attributes in the set:  
+```{r}
+# Define a set of objects
+S <- Set$new(attributes = fc_planets$attributes)
+S$assign(moon = 1, large = 1)
+S
+
+# Compute the extent of S
+fc_planets$extent(S)
+```
+
+**Planets that have the characteristics indicated**. 
+
+## Operations with the lattice
+
+All basic functions developed in the FCA theory by Ganter and Wille have been implemented:
+
+```{r}
+fc_planets$concepts$support()
+
+# Get the index of those concepts with support 
+# greater than the threshold
+idx <- which(fc_planets$concepts$support() > 0.2)
+# Build the sublattice
+sublattice <- fc_planets$concepts$sublattice(idx)
+sublattice
+sublattice$plot()
+# The fifth concept
+C <- fc_planets$concepts$sub(5)
+C
+# Its subconcepts:
+fc_planets$concepts$subconcepts(C)
+# And its superconcepts:
+fc_planets$concepts$superconcepts(C)
+# A list of concepts
+C <- fc_planets$concepts[5:7]
+C
+# Supremum of the concepts in C
+fc_planets$concepts$supremum(C)
+# Infimum of the concepts in C
+fc_planets$concepts$infimum(C)
+fc_planets$concepts$join_irreducibles()
+fc_planets$concepts$meet_irreducibles()
+```
+
+# Implications. Duquenne-Guigues basis   
+
+The **NextClosure** algorithm is used to compute at the same cost not only concepts but also implications.  
+
+The `find_implications()` method is applied to a *formal context object (of class `FormalContext`).
+ 
+```{r echo = TRUE, eval=TRUE}
+fc_planets$find_implications()
+``` 
+  
+The result (a set of association rules with confidence 1) is stored in `fc_planets$implications`. 
+
+```{r echo = TRUE}
+fc_planets$implications$cardinality()
+fc_planets$implications
+fc_planets$implications[2:4]
+```
+
+
+# Simplification Logic in `R` 
+
+We propose Simplification Logic as a tool for developing automatic reasoning methods.
+
+
+```{r closurebinario, fig.align="center", out.width="65%", echo = FALSE}
+knitr::include_graphics("./images/closure.png")
+```
+  
+
+For the case of binary datasets, we have proposed (Ángel Mora, Pablo Cordero, Manuel Enciso, _et. al._) the **Logic of Simplifications**, in 2012. 
+ 
+
+- **Axiom**: infer $A\cup B\Rightarrow A$  
+- **Multiplication**:  from $A\Rightarrow B$ infer $c^*{\otimes}A\Rightarrow c^*{\otimes}B$
+- **Simplification**:  from $A \Rightarrow B$ and $C \Rightarrow D$ infer $(C\smallsetminus B) \Rightarrow (D\smallsetminus B)$ if $A\subseteq C$ 
+- **Rsimplification**:  from $A \Rightarrow B$ and $C \Rightarrow D$ infer $C  \Rightarrow (D\smallsetminus B)$ if $A\subseteq (C \cup D)$ 
+
+ 
+  
+The **Simplifications Logic** is the engine of automatic methods for:   
+
+* Elimination of redundancy, 
+* Calculation of attribute closures, 
+* Minimal key calculation, 
+* Obtaining recommendations, etc. 
+
+
+ 
+In `fcaR` the following equivalence rules have been implemented, based on the axioms of logic:  
+	
+- **Reduction**: from $A\Rightarrow B$, infer
+		$A\Rightarrow B\smallsetminus A$
+- **Generalization**: from $A\Rightarrow B$ and
+		$C\Rightarrow D$, if $A\subseteq C$ and $D\subseteq B$, remove
+		$C\Rightarrow D$.
+- **Composition**: if $A\Rightarrow B$ and
+		$A\Rightarrow C$, replace both implications by 
+		$A\Rightarrow B\cup C$.
+- **Simplification**: if $A\Rightarrow B$ and
+		$C\Rightarrow D$, with $A\subset C$ and $A\cap B = \emptyset$,
+		replace $C\Rightarrow D$ by
+		$C\smallsetminus B\Rightarrow D\smallsetminus B$.
+
+
+ 
+
+```{r rulesbinarias, fig.align="center", out.width="50%", echo = TRUE, eval=FALSE}
+fc_planets$plot()
+# Average number of attributes on left and right hand side
+colSums(fc_planets$implications$size())
+# We apply the logic of simplification
+fc_planets$implications$apply_rules(c("reduction",
+                                      "composition",
+                                      "generalization",
+                                      "simplification",
+                                      "rsimplification"))
+# Average number of attributes in left and right hand side, after simplification
+colSums(fc_planets$implications$size())
+```
+  
+# Support for the `arules` package
+
+ 
+- Import/Export `transactions` from `arules`. 
+- Import rules from `arules`.
+- Manipulate the rules with our algorithms (use Simplification Logic, closures, etc.).
+- Subsequently export to `arules`. 
+ 
+
+```{r fig.align="center", out.width="80%"}
+library(arules)
+data("Mushroom")
+rules_apriori <- apriori(Mushroom, parameter = list(support = 0.3, confidence = 1))
+inspect(head(rules_apriori))
+```
+
+## `arules` to `fcaR`
+
+```{r}
+fc_Mushroom <- FormalContext$new(Mushroom)
+fc_Mushroom$implications$add(rules_apriori)
+fc_Mushroom$implications[2:5]
+fc_Mushroom$implications$cardinality()
+fc_Mushroom$implications$apply_rules(c(
+  "reduction",
+  "composition",
+  "generalization",
+  "simplification",
+  "rsimplification"
+))
+fc_Mushroom$implications$cardinality()
+```
+
+
+## `fcaR` to `arules` 
+ 
+ 
+ 
+```{r}
+arules_rules <- fc_Mushroom$implications$to_arules()
+arules_rules
+class(arules_rules)
+```
+
+ 
+# Recommender system for medical diagnostics
+  
+## Dataset `cobre32`
+
+A diagnostic system from a formal context containing fuzzy medical data.
+		
+The dataset `cobre32` has:	
+
+- 105 objects (patients) in rows.
+- 30 attributes related to signs or symptoms, and 2 attributes related to diagnosis: `dx_ss` (strict schizophrenia) and `dx_other` (bipolar or schizoaffective disorder).
+
+For each symptom-related attribute, there are several possible grades, from *absent* to *extreme*, through *minimal*, *mild*, *moderate*, *moderate severe* and *severe*, which are mapped into the interval $[0, 1]$.	
+
+
+```{r}
+data("cobre32")
+colnames(cobre32)
+```
+
+ 
+```{r}
+# We create the formal context
+fc <- FormalContext$new(cobre32)
+
+# We extract both the concept lattice and the set of implications.
+fc$find_implications()
+fc$concepts$size()
+fc$implications$cardinality()
+
+# We can apply equivalences to get a simpler set of implications.
+fc$implications$apply_rules(rules = c("composition", "simplification"))
+fc$implications$cardinality()
+```
+
+ 
+## Recommendations
+
+From the extracted set of rules, we can define a function that encapsulates the behaviour of the recommender system:
+
+```{r}
+# Here S is the set of known attributes for a new individual.
+# Taking the implications, the consequent containing one of the possible diagnoses is calculated.
+diagnose <- function(S) {
+              fc$implications$recommend(S = S,
+                                        attribute_filter = c("dx_ss","dx_other"))
+  
+}
+```
+
+Let's see how it works with some examples.
+
+Let us consider a first patient:
+
+```{r}
+# We create a vector (set) for the patient's attributes
+Patient1 <- Set$new(attributes = fc$attributes)
+
+# We add those that are known
+# (absent = 0, extreme = 1,...)
+Patient1$assign(COSAS_1 = 0.5,
+                COSAS_2 = 1,
+                COSAS_3 = 0.5,
+                COSAS_4 = 0.166667,
+                COSAS_5 = 0.5,
+                COSAS_6 = 1)
+  
+# Finally, we can run the recommender system
+diagnose(Patient1) 
+```
+The result tells us that this patient should be diagnosed as strict schizophrenia.
+ 
+A second patient:
+
+```{r}
+# Empty set
+Patient2 <- Set$new(attributes = fc$attributes)
+
+# We add the symptoms or signs:
+Patient2$assign(FICAL_2 = 1)
+
+# And we diagnose using the implication-based system.
+diagnose(Patient2) 
+```
+
+In this case, the sign that has been evaluated in this patient does not indicate (according to the set of implications that model the knowledge of the problem) any diagnosis. The problem remains open, and we will see how to solve it later.
+
+Finally, a third patient:
+
+```{r}
+Patient3 <- Set$new(attributes = fc$attributes)
+
+Patient3$assign(COSAS_4 = 0.6666667,
+                FICAL_3 = 0.5,
+                FICAL_5 = 0.5,
+                FICAL_8 = 0.5)
+  
+
+diagnose(Patient3) 
+```
+
+In this case, the patient could be diagnosed with a disorder other than strict schizophrenia.
+
+## Closure with Simplification Logic - more knowledge
+
+When we calculate the closure of a set of attributes using Simplification Logic, we also reduce the set of implications that contain important knowledge (this is the core of other automated methods).
+
+This therefore provides us with additional knowledge that helps us to solve the problem that appeared earlier in `Patient2`.
+
+
+```{r}
+# Here we get not only the closure, but a simplified subset of the implications that are relevant
+cl <- fc$implications$closure(Patient2, 
+                              reduce = TRUE)
+
+# We write the first rules
+new_rules <- cl$implications$filter(rhs = c("dx_ss", "dx_other"), 
+                                    drop = TRUE)
+
+new_rules[c(2, 5, 12:16)]
+```
+
+Some of these inferred rules can help physicians make the diagnosis.
+ 
+
+
+
+ 
