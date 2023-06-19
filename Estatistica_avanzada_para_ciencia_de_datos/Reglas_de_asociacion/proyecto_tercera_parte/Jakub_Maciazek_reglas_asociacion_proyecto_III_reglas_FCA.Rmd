@@ -32,7 +32,7 @@ library(readr)
 library(arules)
 library(arulesViz)
 library(fcaR)
-library(hasseDiagram)
+library(varrank)
 ```
 
 # Project description
@@ -67,73 +67,344 @@ Explain the steps you are taking.
 ## Initial data analysis
 
   We will begin with data import.
+
+```{r}
+sn <- read.csv("S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Reglas_de_asociacion/proyecto_tercera_parte/5000 de 26 medios completo-1.csv",  sep=";", row.names = 1, colClasses=c("character", rep("numeric",26)))
+head(sn)
+sapply(sn, class)
+```
+
   
+<!--  
+  OLD DATA READ
+
+
 ```{r}
 sn <- read.csv("S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Reglas_de_asociacion/proyecto_tercera_parte/5000 de 26 medios completo-1.csv",  sep=";")
 head(sn)
+```
 
+  Adding rownames
+
+```{r}
 rows_labels <- sn[ , c("X")]
-head(rows_labels)
+#head(rows_labels)
 sn <- subset(sn, select = -c(X) )
-head(sn)
+#head(sn)
 rownames(sn) <- rows_labels
 head(sn)
+#sn <- sapply(sn, function(x){ as.logical(as.integer(x)) })
+#sn <- as.logical(as.integer(sn))
+```
+-->
+
+<!--
+  
+  ATTEMPT TO CREATE DATA SUITABLE FOR ARULES  
+
+
+```{r}
+#dim(sn) # 233 x 26
+#colnames(sn)[1] # start with 1
+rows <- rownames(sn)
+cols <- colnames(sn)
+
+sn_mth <- c()
+sn_htm <- c()
+for (row in 1:233) { #1:233
+  rowname <- rows[row]
+  row_data <- sn[row,]
+  
+  for (col in 1:26) { #1:26
+    append(sn_mth, c(col, row_data[col])) #test
+    #print(row_data[col] == 1)
+    if (row_data[col] == 1) {
+      col_value <- cols[col]
+      
+      value <- {hashtag=as.factor(rowname); media=col_value}
+      value2 <- c(as.factor(col_value), rowname)
+      
+      #print(value)
+      sn_mth <- append(sn_mth, value)
+      sn_htm <- append(sn_htm, value2)
+    }
+  }
+}
+#sn_mth
+#sn_htm
+```
+-->
+
+<!--
+
+    SECOND ATTEMPT TO CREATE DATA SUITABLE FOR ARULES  
+
+```{r}
+#dim(sn) # 233 x 26
+#colnames(sn)[1] # start with 1
+rows <- rownames(sn)
+cols <- colnames(sn)
+
+medias <- c()
+hashtags <- c()
+for (row in 1:233) { #1:233
+  rowname <- rows[row]
+  row_data <- sn[row,]
+  
+  for (col in 1:26) { #1:26
+    append(sn_mth, c(col, row_data[col])) #test
+    #print(row_data[col] == 1)
+    if (row_data[col] == 1) {
+      medias <- append(medias, cols[col])
+      hashtags <- append(hashtags, rowname)
+    }
+  }
+}
+#medias
+#hashtags
+```
+```{r}
+library("Matrix")
+
+a_df <- data.frame(
+  Media = medias, #TID
+  Hashtag = hashtags #item
+)
+
+#j <- as.integer(a_df$Media)
+#Hashtag <- factor(a_df$Hashtag)
+#i <- as.integer(Hashtag)
+j <- factor(a_df$Media)
+Hashtag <- factor(a_df$Hashtag)
+i <- factor(Hashtag)
+
+#ngT <- new("ngTMatrix", i = i-1L, j = j-1L, Dim = c(max(i), max(j)), 
+#  Dimnames = list(levels(Hashtag), NULL))
+#ngC <- as(ngT, "ngCMatrix")
+#trans <- as(ngC, "transactions")
+
+#inspect(trans)
+
+```
+-->
+
+## Arules analysis
+
+<!--
+Failed discretization
+
+```{r}
+#sn_discretized <- discretization(data.df = sn_processed, discretization.method = "cencov", frequency = FALSE)
+#head(sn_discretized)
+```
+-->
+
+<!--
+
+  OTHER ATTEMPTS
+
+```{r}
+#trans1 <- apriori(sn_mth, "transactions")
 ```
 
-  Removal of columns where all values are 0 (Media didn't occure in any topic).
-  
 ```{r}
-#sn_processed <- sn[, which(colSums(sn) != FALSE)]
+#rules <- apriori(sn_htm, parameter = list(
+#  supp = 0.5, conf = 0.9,
+#  target = "rules"
+#))
 ```
 
-  Given data is already discreet, therefore does not require any transformations, except generation of set of transactions for *arules* analysis.
-  
 ```{r}
-#trans1 <- transactions(sn)
+#trans1 <- transactions(sn_mth)
 #trans1
 #inspect(trans1)
 ```
-  
-## Arules analysis
+-->
+
+Removal of columns where all values are 0 (Media didn't occure in any topic).
+
+```{r}
+sn_processed <- sn
+sn_processed <- subset(sn, select = -c(Breaking.News, Financial.Times))
+```
+
+  As single value data were removed, associations can be generated.
+
+<!--
+```{r}
+trans1 <- transactions(sn_processed)
+trans1
+inspect(trans1)
+```
+-->
+
+  Despite different attempts, data suitable for correct arules analysis was not achieved.
+
+<!--
+```{r}
+rules <- apriori(trans1, parameter = list(
+  supp = 0.15, conf = 0.9,
+  target = "rules",
+  maxlen = 5
+))
+```
+```{r}
+inspect(rules)
+summaty(rules)
+```
+-->
+
+```{r}
+#rules <- apriori(sn_processed, parameter = list(
+#  supp = 0.5, conf = 0.9,
+#  target = "rules",
+#  maxlen = 5
+#))
+```
+
+```{r}
+#inspect(rules)
+#summaty(rules)
+```
+
 
 ## Formal Concept Analysis
+
+  FCA is able to work with binary data, therefore no transformation is needed. 
+  
+  We will begin with creating formal context, with which we can see the dimensions of dataset: 233 hashtags and 26 medias.
+
+<!-- fc_sn$dim() # dimensions-->
 
 ```{r}
 fc_sn <- FormalContext$new(sn)
 fc_sn$print()
 ```
 
+  Those media companies are:
+
 ```{r}
-fc_sn$dim()
-
 fc_sn$attributes
+```
 
-fc_sn$objects
+  And hashtags include:
+  
+```{r}
+sort(fc_sn$objects)
+```
 
+  We can visualize relationship between them with:
+  
+```{r}
 fc_sn$plot()
 ```
+
+From this plot we can also initialy say that:
+
+  - Most active companies are mainly: BBC.News..World., CNN.International and Le.Tour.de.France.
+  - Most popular hastags on the otherhand seem to be mainly: starwars, youlookdisgusting and goatleti.
+
+### Concept analysis
+
+  We can calculate concepts using Ganter and Wille’s NextClosure algorithm. Without any restrictions, 54 concepts can be found.
+
 ```{r}
+#Find concepts
 fc_sn$find_concepts()
+#Number of found concepts
 fc_sn$concepts$size()
+#Some of the concepts
 head(fc_sn$concepts)
 ```
 
+<!--
+### Lattice plot
+
 ```{r}
 # Wrong version of R
-
 #fc_sn$concepts$plot(object_names = FALSE)
 ```
+-->
 
+
+<!--
+A concept (A,B), contains a set of objects A (the extent) and a set of attributes B (the intent) such that:
+
+the extent A consists of all objects that share the attributes in B.
+the intent B consists of all the attributes shared by the objects in A.
+-->
+### Closures
+
+  Using closures we can calculate extents and intents based on popular values viewed on the plot.
+  
 ```{r}
-fc_sn$concepts$support()
+# Define a set of objects
+S <- Set$new(attributes = fc_sn$objects)
+S$assign("#starwars" = 1, "#youlookdisgusting" = 1, "#goatleti"=1)
+fc_sn$intent(S)
+
+S <- Set$new(attributes = fc_sn$objects)
+S$assign("#starwars" = 1)
+fc_sn$intent(S)
+
+S <- Set$new(attributes = fc_sn$objects)
+S$assign("#youlookdisgusting" = 1)
+fc_sn$intent(S)
+
+S <- Set$new(attributes = fc_sn$objects)
+S$assign("#goatleti"=1)
+fc_sn$intent(S)
+```
+
+  From the number of intents it can be seen that hose topics are not that popular, and visual analysis was unprecise.
+
+### Concepts quality analysis
+
+  As can be seen, no true concepts of support higher than 0.2 are observed.
+```{r}
+hist(fc_sn$concepts$support())
 
 idx <- which(fc_sn$concepts$support() > 0.2)
-
 sublattice <- fc_sn$concepts$sublattice(idx)
 sublattice
 ```
 
+  As for the concepts with at least 0.1 support, there are 5 true concepts like this, and 4 of them has support over 15%:
+  
+```{r}
+idx <- which(fc_sn$concepts$support() > 0.1)
+sublattice <- fc_sn$concepts$sublattice(idx)
+sublattice
+sublattice$support()
+```
+
+```{r}
+best_concepts <- sublattice[2:6]
+best_concepts
+best_concepts$support()
+```
+### Implications
+
+```{r}
+fc_sn$find_implications()
+
+fc_sn$implications$cardinality() #262
+
+colSums(fc_sn$implications$size()) # Implication set with 262 implications.
+
+fc_sn$implications$apply_rules(c("reduction",
+                                      "composition",
+                                      "generalization",
+                                      "simplification",
+                                      "rsimplification"))
+colSums(fc_sn$implications$size())
+fc_sn$implications
+
+```
+  
 # Deeper analysis
+
+As arules analysis failed, this part was not conducted.
 
 
 

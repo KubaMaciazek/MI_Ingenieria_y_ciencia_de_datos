@@ -1628,89 +1628,627 @@ Prism.languages.r={comment:/#.*/,string:{pattern:/(['"])(?:\\.|(?!\1)[^\\\r\n])*
 <div id="initial-data-analysis" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span> Initial data analysis</h2>
 <p>We will begin with data import.</p>
-<pre class="r"><code>sn &lt;- read.csv(&quot;S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Reglas_de_asociacion/proyecto_tercera_parte/5000 de 26 medios completo-1.csv&quot;,  sep=&quot;;&quot;)
+<pre class="r"><code>sn &lt;- read.csv(&quot;S:/0_Universidad_de_Malaga/MI_Ingenieria_y_ciencia_de_datos/Estatistica_avanzada_para_ciencia_de_datos/Reglas_de_asociacion/proyecto_tercera_parte/5000 de 26 medios completo-1.csv&quot;,  sep=&quot;;&quot;, row.names = 1, colClasses=c(&quot;character&quot;, rep(&quot;numeric&quot;,26)))
 head(sn)
-##              X Al.Jazeera.English BBC.News..World. Bloomberg.Business
-## 1 #gaza1yearon                  1                0                  0
-## 2    #gazalife                  1                0                  0
-## 3        #1mdb                  0                1                  0
-## 4        #acdc                  0                1                  0
-## 5  #bbccycling                  0                1                  0
-## 6 #bbcgofigure                  0                1                  0
-##   Breaking.News Champions.League CNN.International Eurosport Financial.Times
-## 1             0                0                 0         0               0
-## 2             0                0                 0         0               0
-## 3             0                0                 0         0               0
-## 4             0                0                 0         0               0
-## 5             0                0                 0         0               0
-## 6             0                0                 0         0               0
-##   Forbes Formula.1 Huffington.Post Le.Tour.de.France MotoGPŞ
-## 1      0         0               0                 0       0
-## 2      0         0               0                 0       0
-## 3      0         0               0                 0       0
-## 4      0         0               0                 0       0
-## 5      0         0               0                 0       0
-## 6      0         0               0                 0       0
-##   National.Geographic Premier.League Reuters.Top.News Sky.Sports
-## 1                   0              0                0          0
-## 2                   0              0                0          0
-## 3                   0              0                0          0
-## 4                   0              0                0          0
-## 5                   0              0                0          0
-## 6                   0              0                0          0
-##   Sports.Illustrated The.Associated.Press The.Economist The.Guardian
-## 1                  0                    0             0            0
-## 2                  0                    0             0            0
-## 3                  0                    0             0            0
-## 4                  0                    0             0            0
-## 5                  0                    0             0            0
-## 6                  0                    0             0            0
-##   The.New.York.Times TIME.com UEFA.com Wall.Street.Journal Washington.Post
-## 1                  0        0        0                   0               0
-## 2                  0        0        0                   0               0
-## 3                  0        0        0                   0               0
-## 4                  0        0        0                   0               0
-## 5                  0        0        0                   0               0
-## 6                  0        0        0                   0               0</code></pre>
-<p>Removal of columns where all values are 0 (Media didn’t occure in any topic).</p>
-<pre class="r"><code>#sn_processed &lt;- sn[, which(colSums(sn) != FALSE)]</code></pre>
-<p>Given data is already discreet, therefore does not require any transformations, except generation of set of transactions for <em>arules</em> analysis.</p>
-<pre class="r"><code>#trans1 &lt;- transactions(sn)
-#trans1
-#inspect(trans1)</code></pre>
+##              Al.Jazeera.English BBC.News..World. Bloomberg.Business
+## #gaza1yearon                  1                0                  0
+## #gazalife                     1                0                  0
+## #1mdb                         0                1                  0
+## #acdc                         0                1                  0
+## #bbccycling                   0                1                  0
+## #bbcgofigure                  0                1                  0
+##              Breaking.News Champions.League CNN.International Eurosport
+## #gaza1yearon             0                0                 0         0
+## #gazalife                0                0                 0         0
+## #1mdb                    0                0                 0         0
+## #acdc                    0                0                 0         0
+## #bbccycling              0                0                 0         0
+## #bbcgofigure             0                0                 0         0
+##              Financial.Times Forbes Formula.1 Huffington.Post Le.Tour.de.France
+## #gaza1yearon               0      0         0               0                 0
+## #gazalife                  0      0         0               0                 0
+## #1mdb                      0      0         0               0                 0
+## #acdc                      0      0         0               0                 0
+## #bbccycling                0      0         0               0                 0
+## #bbcgofigure               0      0         0               0                 0
+##              MotoGPŞ National.Geographic Premier.League Reuters.Top.News
+## #gaza1yearon       0                   0              0                0
+## #gazalife          0                   0              0                0
+## #1mdb              0                   0              0                0
+## #acdc              0                   0              0                0
+## #bbccycling        0                   0              0                0
+## #bbcgofigure       0                   0              0                0
+##              Sky.Sports Sports.Illustrated The.Associated.Press The.Economist
+## #gaza1yearon          0                  0                    0             0
+## #gazalife             0                  0                    0             0
+## #1mdb                 0                  0                    0             0
+## #acdc                 0                  0                    0             0
+## #bbccycling           0                  0                    0             0
+## #bbcgofigure          0                  0                    0             0
+##              The.Guardian The.New.York.Times TIME.com UEFA.com
+## #gaza1yearon            0                  0        0        0
+## #gazalife               0                  0        0        0
+## #1mdb                   0                  0        0        0
+## #acdc                   0                  0        0        0
+## #bbccycling             0                  0        0        0
+## #bbcgofigure            0                  0        0        0
+##              Wall.Street.Journal Washington.Post
+## #gaza1yearon                   0               0
+## #gazalife                      0               0
+## #1mdb                          0               0
+## #acdc                          0               0
+## #bbccycling                    0               0
+## #bbcgofigure                   0               0
+sapply(sn, class)
+##   Al.Jazeera.English     BBC.News..World.   Bloomberg.Business 
+##            &quot;numeric&quot;            &quot;numeric&quot;            &quot;numeric&quot; 
+##        Breaking.News     Champions.League    CNN.International 
+##            &quot;numeric&quot;            &quot;numeric&quot;            &quot;numeric&quot; 
+##            Eurosport      Financial.Times               Forbes 
+##            &quot;numeric&quot;            &quot;numeric&quot;            &quot;numeric&quot; 
+##            Formula.1      Huffington.Post    Le.Tour.de.France 
+##            &quot;numeric&quot;            &quot;numeric&quot;            &quot;numeric&quot; 
+##              MotoGPŞ  National.Geographic       Premier.League 
+##            &quot;numeric&quot;            &quot;numeric&quot;            &quot;numeric&quot; 
+##     Reuters.Top.News           Sky.Sports   Sports.Illustrated 
+##            &quot;numeric&quot;            &quot;numeric&quot;            &quot;numeric&quot; 
+## The.Associated.Press        The.Economist         The.Guardian 
+##            &quot;numeric&quot;            &quot;numeric&quot;            &quot;numeric&quot; 
+##   The.New.York.Times             TIME.com             UEFA.com 
+##            &quot;numeric&quot;            &quot;numeric&quot;            &quot;numeric&quot; 
+##  Wall.Street.Journal      Washington.Post 
+##            &quot;numeric&quot;            &quot;numeric&quot;</code></pre>
 </div>
 <div id="arules-analysis" class="section level2" number="2.2">
 <h2><span class="header-section-number">2.2</span> Arules analysis</h2>
+<p>Removal of columns where all values are 0 (Media didn’t occure in any topic).</p>
+<pre class="r"><code>sn_processed &lt;- sn
+sn_processed &lt;- subset(sn, select = -c(Breaking.News, Financial.Times))</code></pre>
+<p>As single value data were removed, associations can be generated.</p>
+<p>Despite different attempts, data suitable for correct arules analysis was not achieved.</p>
 </div>
 <div id="formal-concept-analysis" class="section level2" number="2.3">
 <h2><span class="header-section-number">2.3</span> Formal Concept Analysis</h2>
+<p>FCA is able to work with binary data, therefore no transformation is needed.</p>
+<p>We will begin with creating formal context, with which we can see the dimensions of dataset: 233 hashtags and 26 medias.</p>
+<!-- fc_sn$dim() # dimensions-->
 <pre class="r"><code>fc_sn &lt;- FormalContext$new(sn)
 fc_sn$print()
-## FormalContext with 233 objects and 27 attributes.
-## # A tibble: 233 x 27
-##    X        Al.Jazeera.English BBC.News..World. Bloomberg.Business Breaking.News
-##    &lt;chr&gt;                 &lt;int&gt;            &lt;int&gt;              &lt;int&gt;         &lt;int&gt;
-##  1 #gaza1y~                  1                0                  0             0
-##  2 #gazali~                  1                0                  0             0
-##  3 #1mdb                     0                1                  0             0
-##  4 #acdc                     0                1                  0             0
-##  5 #bbccyc~                  0                1                  0             0
-##  6 #bbcgof~                  0                1                  0             0
-##  7 #dailyc~                  0                1                  0             0
-##  8 #dontju~                  0                1                  0             0
-##  9 #ebola                    0                1                  0             0
-## 10 #floodi~                  0                1                  0             0
-## # i 223 more rows
-## # i 22 more variables: Champions.League &lt;int&gt;, CNN.International &lt;int&gt;,
-## #   Eurosport &lt;int&gt;, Financial.Times &lt;int&gt;, Forbes &lt;int&gt;, Formula.1 &lt;int&gt;,
-## #   Huffington.Post &lt;int&gt;, Le.Tour.de.France &lt;int&gt;, MotoGPŞ &lt;int&gt;,
-## #   National.Geographic &lt;int&gt;, Premier.League &lt;int&gt;, Reuters.Top.News &lt;int&gt;,
-## #   Sky.Sports &lt;int&gt;, Sports.Illustrated &lt;int&gt;, The.Associated.Press &lt;int&gt;,
-## #   The.Economist &lt;int&gt;, The.Guardian &lt;int&gt;, The.New.York.Times &lt;int&gt;, ...</code></pre>
+## FormalContext with 233 objects and 26 attributes.
+##                      Al.Jazeera.English  BBC.News..World.  Bloomberg.Business  
+##         #gaza1yearon          X                                                
+##            #gazalife          X                                                
+##                #1mdb                             X                             
+##                #acdc                             X                             
+##          #bbccycling                             X                             
+##         #bbcgofigure                             X                             
+##        #dailycommute                             X                             
+##  #dontjudgechallange                             X                             
+##               #ebola                             X                             
+##            #flooding                             X                             
+## Other attributes are: Breaking.News, Champions.League, CNN.International,
+## Eurosport, Financial.Times, Forbes, ...</code></pre>
+<p>Those media companies are:</p>
+<pre class="r"><code>fc_sn$attributes
+##  [1] &quot;Al.Jazeera.English&quot;   &quot;BBC.News..World.&quot;     &quot;Bloomberg.Business&quot;  
+##  [4] &quot;Breaking.News&quot;        &quot;Champions.League&quot;     &quot;CNN.International&quot;   
+##  [7] &quot;Eurosport&quot;            &quot;Financial.Times&quot;      &quot;Forbes&quot;              
+## [10] &quot;Formula.1&quot;            &quot;Huffington.Post&quot;      &quot;Le.Tour.de.France&quot;   
+## [13] &quot;MotoGPŞ&quot;              &quot;National.Geographic&quot;  &quot;Premier.League&quot;      
+## [16] &quot;Reuters.Top.News&quot;     &quot;Sky.Sports&quot;           &quot;Sports.Illustrated&quot;  
+## [19] &quot;The.Associated.Press&quot; &quot;The.Economist&quot;        &quot;The.Guardian&quot;        
+## [22] &quot;The.New.York.Times&quot;   &quot;TIME.com&quot;             &quot;UEFA.com&quot;            
+## [25] &quot;Wall.Street.Journal&quot;  &quot;Washington.Post&quot;</code></pre>
+<p>And hashtags include:</p>
+<pre class="r"><code>sort(fc_sn$objects)
+##   [1] &quot;#1mdb&quot;                      &quot;#2degrees&quot;                 
+##   [3] &quot;#65yearsoff1&quot;               &quot;#acdc&quot;                     
+##   [5] &quot;#aftertheflag&quot;              &quot;#albertocontador&quot;          
+##   [7] &quot;#alcoa&quot;                     &quot;#allezalm&quot;                 
+##   [9] &quot;#amiens&quot;                    &quot;#ap&quot;                       
+##  [11] &quot;#ap10things&quot;                &quot;#aptopix&quot;                  
+##  [13] &quot;#arras&quot;                     &quot;#arrastdf&quot;                 
+##  [15] &quot;#arsenalsingapore&quot;          &quot;#ashes&quot;                    
+##  [17] &quot;#ashes2015&quot;                 &quot;#ashesverdict&quot;             
+##  [19] &quot;#askbautista&quot;               &quot;#askbobgale&quot;               
+##  [21] &quot;#askbradl&quot;                  &quot;#askwenger&quot;                
+##  [23] &quot;#aussiecorner&quot;              &quot;#avfc&quot;                     
+##  [25] &quot;#baba&quot;                      &quot;#backstage&quot;                
+##  [27] &quot;#bangkok&quot;                   &quot;#bat&quot;                      
+##  [29] &quot;#bat2015&quot;                   &quot;#bbccycling&quot;               
+##  [31] &quot;#bbcgofigure&quot;               &quot;#bolivia&quot;                  
+##  [33] &quot;#booksnotbullets&quot;           &quot;#bpl&quot;                      
+##  [35] &quot;#britishgp&quot;                 &quot;#britishopen&quot;              
+##  [37] &quot;#bu21pl&quot;                    &quot;#budget2&quot;                  
+##  [39] &quot;#budget2015&quot;                &quot;#celeb100&quot;                 
+##  [41] &quot;#charlestonshooting&quot;        &quot;#china&quot;                    
+##  [43] &quot;#cn&quot;                        &quot;#cnnfc&quot;                    
+##  [45] &quot;#cnnlivinggolf&quot;             &quot;#cobbles&quot;                  
+##  [47] &quot;#confederateflag&quot;           &quot;#cosby&quot;                    
+##  [49] &quot;#couture&quot;                   &quot;#dailychart&quot;               
+##  [51] &quot;#dailycommute&quot;              &quot;#dearandy&quot;                 
+##  [53] &quot;#deepdream&quot;                 &quot;#dontjudgechallange&quot;       
+##  [55] &quot;#É&quot;                         &quot;#ebola&quot;                    
+##  [57] &quot;#econarchive&quot;               &quot;#econespresso&quot;             
+##  [59] &quot;#enferdunord&quot;               &quot;#euro2016&quot;                 
+##  [61] &quot;#eurosport&quot;                 &quot;#f1&quot;                       
+##  [63] &quot;#f1fastfact&quot;                &quot;#factoftheday&quot;             
+##  [65] &quot;#feeltheforce&quot;              &quot;#fenerbahce&quot;               
+##  [67] &quot;#flooding&quot;                  &quot;#foia&quot;                     
+##  [69] &quot;#fpl&quot;                       &quot;#fracking&quot;                 
+##  [71] &quot;#freethenipple&quot;             &quot;#futureoffood&quot;             
+##  [73] &quot;#gaza&quot;                      &quot;#gaza1yearon&quot;              
+##  [75] &quot;#gazalife&quot;                  &quot;#gazawarchildren&quot;          
+##  [77] &quot;#germangp&quot;                  &quot;#goatleti&quot;                 
+##  [79] &quot;#goldcup&quot;                   &quot;#golfonsky&quot;                
+##  [81] &quot;#gopro&quot;                     &quot;#gorilla&quot;                  
+##  [83] &quot;#granddepart&quot;               &quot;#gre&quot;                      
+##  [85] &quot;#greece&quot;                    &quot;#greececrisis&quot;             
+##  [87] &quot;#greek&quot;                     &quot;#greekcrisis&quot;              
+##  [89] &quot;#greferendum&quot;               &quot;#grexit&quot;                   
+##  [91] &quot;#hillaryoncnn&quot;              &quot;#holocaust&quot;                
+##  [93] &quot;#inequality&quot;                &quot;#iran&quot;                     
+##  [95] &quot;#irantalks&quot;                 &quot;#irantalksvienna&quot;          
+##  [97] &quot;#isis&quot;                      &quot;#israel&quot;                   
+##  [99] &quot;#jadehelm15&quot;                &quot;#japan&quot;                    
+## [101] &quot;#joseserpa&quot;                 &quot;#kampioen&quot;                 
+## [103] &quot;#keepitcool&quot;                &quot;#km0&quot;                      
+## [105] &quot;#kyivpolice&quot;                &quot;#lacaravane&quot;               
+## [107] &quot;#language&quot;                  &quot;#lasvegas&quot;                 
+## [109] &quot;#leftshark&quot;                 &quot;#legomovie&quot;                
+## [111] &quot;#libya&quot;                     &quot;#likeagirl&quot;                
+## [113] &quot;#londonbombings&quot;            &quot;#lovethedarts&quot;             
+## [115] &quot;#maillotapoiscarrefour&quot;     &quot;#maillotblanckrys&quot;         
+## [117] &quot;#maillotjaune&quot;              &quot;#maillotjaunelcl&quot;          
+## [119] &quot;#meansalot&quot;                 &quot;#microsoft&quot;                
+## [121] &quot;#mlb&quot;                       &quot;#moto2&quot;                    
+## [123] &quot;#motogp&quot;                    &quot;#motogpvideogame&quot;          
+## [125] &quot;#myashessummer&quot;             &quot;#mytopcollege&quot;             
+## [127] &quot;#nangka&quot;                    &quot;#natgeoproof&quot;              
+## [129] &quot;#nba&quot;                       &quot;#nbafreeagency&quot;            
+## [131] &quot;#nefertiti&quot;                 &quot;#newhorizons&quot;              
+## [133] &quot;#newsfromelsewhere&quot;         &quot;#newyorkstockexchange&quot;     
+## [135] &quot;#nfl&quot;                       &quot;#nufc&quot;                     
+## [137] &quot;#nycfc&quot;                     &quot;#nyse&quot;                     
+## [139] &quot;#o&quot;                         &quot;#obama&quot;                    
+## [141] &quot;#odd&quot;                       &quot;#oil&quot;                      
+## [143] &quot;#onthisday&quot;                 &quot;#open2015&quot;                 
+## [145] &quot;#orgullolatinoamericano&quot;    &quot;#ourway&quot;                   
+## [147] &quot;#parisfashionweek&quot;          &quot;#parisroubaix&quot;             
+## [149] &quot;#periscope&quot;                 &quot;#philippines&quot;              
+## [151] &quot;#photography&quot;               &quot;#photojournalism&quot;          
+## [153] &quot;#pirlo&quot;                     &quot;#pl4sport&quot;                 
+## [155] &quot;#plutoflyby&quot;                &quot;#pod&quot;                      
+## [157] &quot;#prixantargaz&quot;              &quot;#ramadan&quot;                  
+## [159] &quot;#redskins&quot;                  &quot;#rlnewera&quot;                 
+## [161] &quot;#robowars&quot;                  &quot;#rossivsmarquez&quot;           
+## [163] &quot;#saintsfc&quot;                  &quot;#schlaaaaannn&quot;             
+## [165] &quot;#scotus&quot;                    &quot;#sevenseven&quot;               
+## [167] &quot;#sharkfest&quot;                 &quot;#sharkweek&quot;                
+## [169] &quot;#sinow&quot;                     &quot;#skyf1&quot;                    
+## [171] &quot;#skygaa&quot;                    &quot;#sousseattack&quot;             
+## [173] &quot;#spacex&quot;                    &quot;#standrews&quot;                
+## [175] &quot;#starwars&quot;                  &quot;#streefood&quot;                
+## [177] &quot;#sugeknight&quot;                &quot;#summerbudget&quot;             
+## [179] &quot;#supportyourlocalchampions&quot; &quot;#surfing&quot;                  
+## [181] &quot;#swans&quot;                     &quot;#tacobelldelivery&quot;         
+## [183] &quot;#tbt&quot;                       &quot;#tdf&quot;                      
+## [185] &quot;#tdf1015&quot;                   &quot;#tdf2015&quot;                  
+## [187] &quot;#tdfdata&quot;                   &quot;#teamcofidis&quot;              
+## [189] &quot;#theashes&quot;                  &quot;#thebachelorette&quot;          
+## [191] &quot;#theopen&quot;                   &quot;#thesimpsons&quot;              
+## [193] &quot;#thfc&quot;                      &quot;#thrive&quot;                   
+## [195] &quot;#tkam&quot;                      &quot;#toe2toe&quot;                  
+## [197] &quot;#tonymartin&quot;                &quot;#tourdefrance&quot;             
+## [199] &quot;#tourdesep&quot;                 &quot;#tourdevoss&quot;               
+## [201] &quot;#tubestrike&quot;                &quot;#typhoon&quot;                  
+## [203] &quot;#u19euro&quot;                   &quot;#uber&quot;                     
+## [205] &quot;#ucl&quot;                       &quot;#ufc189&quot;                   
+## [207] &quot;#unicornoftheweek&quot;          &quot;#united&quot;                   
+## [209] &quot;#unitedairlines&quot;            &quot;#usavhon&quot;                  
+## [211] &quot;#usmnt&quot;                     &quot;#uswnt&quot;                    
+## [213] &quot;#vyapam&quot;                    &quot;#vyapamscam&quot;               
+## [215] &quot;#welcometoby&quot;               &quot;#wim&quot;                      
+## [217] &quot;#wimbl&quot;                     &quot;#wimbled&quot;                  
+## [219] &quot;#wimbledon&quot;                 &quot;#wimbledon2015&quot;            
+## [221] &quot;#wineschool&quot;                &quot;#wishfulthinking&quot;          
+## [223] &quot;#womensworldcup&quot;            &quot;#worldheritage&quot;            
+## [225] &quot;#wsjinclusion&quot;              &quot;#ww1&quot;                      
+## [227] &quot;#yearinspace&quot;               &quot;#yellowjersey&quot;             
+## [229] &quot;#yemen&quot;                     &quot;#youlookdisgusting&quot;        
+## [231] &quot;#younow&quot;                    &quot;#yourshot&quot;                 
+## [233] &quot;#zonehoppers&quot;</code></pre>
+<p>We can visualize relationship between them with:</p>
+<pre class="r"><code>fc_sn$plot()</code></pre>
+<p><img src="data:image/png;base64,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" width="480" style="display: block; margin: auto;" /></p>
+<p>From this plot we can also initialy say that:</p>
+<ul>
+<li>Most active companies are mainly: BBC.News..World., CNN.International and Le.Tour.de.France.</li>
+<li>Most popular hastags on the otherhand seem to be mainly: starwars, youlookdisgusting and goatleti.</li>
+</ul>
+<div id="concept-analysis" class="section level3" number="2.3.1">
+<h3><span class="header-section-number">2.3.1</span> Concept analysis</h3>
+<p>We can calculate concepts using Ganter and Wille’s NextClosure algorithm. Without any restrictions, 54 concepts can be found.</p>
+<pre class="r"><code>#Find concepts
+fc_sn$find_concepts()
+#Number of found concepts
+fc_sn$concepts$size()
+## [1] 54
+#Some of the concepts
+head(fc_sn$concepts)
+## A set of 6 concepts:
+## 1: ({#gaza1yearon, #gazalife, #1mdb, #acdc, #bbccycling, #bbcgofigure, #dailycommute, #dontjudgechallange, #ebola, #flooding, #gaza, #gazawarchildren, #gre, #greece, #greececrisis, #holocaust, #irantalksvienna, #israel, #japan, #kyivpolice, #lasvegas, #libya, #nangka, #newsfromelsewhere, #obama, #robowars, #sevenseven, #sousseattack, #starwars, #tdf2015, #tourdefrance, #typhoon, #vyapamscam, #wimbledon, #ww1, #youlookdisgusting, #É, #budget2015, #grexit, #nyse, #euro2016, #fenerbahce, #goatleti, #supportyourlocalchampions, #ucl, #2degrees, #askbobgale, #bangkok, #china}, {})
+## 2: ({#flooding, #gre, #israel, #nyse, #china}, {Washington.Post})
+## 3: ({#dailycommute, #ebola, #bangkok}, {Wall.Street.Journal})
+## 4: ({#greececrisis, #askbobgale}, {UEFA.com})
+## 5: ({#nyse, #2degrees}, {TIME.com})
+## 6: ({#ucl}, {The.New.York.Times})</code></pre>
+</div>
+<div id="closures" class="section level3" number="2.3.2">
+<h3><span class="header-section-number">2.3.2</span> Closures</h3>
+<p>Using closures we can calculate extents and intents based on popular values viewed on the plot.</p>
+<pre class="r"><code># Define a set of objects
+S &lt;- Set$new(attributes = fc_sn$objects)
+S$assign(&quot;#starwars&quot; = 1, &quot;#youlookdisgusting&quot; = 1, &quot;#goatleti&quot;=1)
+fc_sn$intent(S)
+## {}
+
+S &lt;- Set$new(attributes = fc_sn$objects)
+S$assign(&quot;#starwars&quot; = 1)
+fc_sn$intent(S)
+## {BBC.News..World., CNN.International}
+
+S &lt;- Set$new(attributes = fc_sn$objects)
+S$assign(&quot;#youlookdisgusting&quot; = 1)
+fc_sn$intent(S)
+## {BBC.News..World.}
+
+S &lt;- Set$new(attributes = fc_sn$objects)
+S$assign(&quot;#goatleti&quot;=1)
+fc_sn$intent(S)
+## {Champions.League}</code></pre>
+<p>From the number of intents it can be seen that hose topics are not that popular, and visual analysis was unprecise.</p>
+</div>
+<div id="concepts-quality-analysis" class="section level3" number="2.3.3">
+<h3><span class="header-section-number">2.3.3</span> Concepts quality analysis</h3>
+<p>As can be seen, no true concepts of support higher than 0.2 are observed.</p>
+<pre class="r"><code>hist(fc_sn$concepts$support())</code></pre>
+<p><img src="data:image/png;base64,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" width="480" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>
+idx &lt;- which(fc_sn$concepts$support() &gt; 0.2)
+sublattice &lt;- fc_sn$concepts$sublattice(idx)
+sublattice
+## A set of 1 concepts:
+## 1: ({#gaza1yearon, #gazalife, #1mdb, #acdc, #bbccycling, #bbcgofigure, #dailycommute, #dontjudgechallange, #ebola, #flooding, #gaza, #gazawarchildren, #gre, #greece, #greececrisis, #holocaust, #irantalksvienna, #israel, #japan, #kyivpolice, #lasvegas, #libya, #nangka, #newsfromelsewhere, #obama, #robowars, #sevenseven, #sousseattack, #starwars, #tdf2015, #tourdefrance, #typhoon, #vyapamscam, #wimbledon, #ww1, #youlookdisgusting, #É, #budget2015, #grexit, #nyse, #euro2016, #fenerbahce, #goatleti, #supportyourlocalchampions, #ucl, #2degrees, #askbobgale, #bangkok, #china}, {})</code></pre>
+<p>As for the concepts with at least 0.1 support, there are 5 true concepts like this, and 4 of them has support over 15%:</p>
+<pre class="r"><code>idx &lt;- which(fc_sn$concepts$support() &gt; 0.1)
+sublattice &lt;- fc_sn$concepts$sublattice(idx)
+sublattice
+## A set of 7 concepts:
+## 1: ({#gaza1yearon, #gazalife, #1mdb, #acdc, #bbccycling, #bbcgofigure, #dailycommute, #dontjudgechallange, #ebola, #flooding, #gaza, #gazawarchildren, #gre, #greece, #greececrisis, #holocaust, #irantalksvienna, #israel, #japan, #kyivpolice, #lasvegas, #libya, #nangka, #newsfromelsewhere, #obama, #robowars, #sevenseven, #sousseattack, #starwars, #tdf2015, #tourdefrance, #typhoon, #vyapamscam, #wimbledon, #ww1, #youlookdisgusting, #É, #budget2015, #grexit, #nyse, #euro2016, #fenerbahce, #goatleti, #supportyourlocalchampions, #ucl, #2degrees, #askbobgale, #bangkok, #china}, {})
+## 2: ({#dailycommute, #dontjudgechallange, #libya, #sousseattack, #tdf2015}, {Le.Tour.de.France})
+## 3: ({#1mdb, #acdc, #bbccycling, #bbcgofigure, #gre, #holocaust, #irantalksvienna, #israel, #japan, #kyivpolice}, {CNN.International})
+## 4: ({#gazalife, #1mdb, #acdc, #bbccycling, #bbcgofigure, #dailycommute, #dontjudgechallange, #ebola, #flooding}, {BBC.News..World.})
+## 5: ({#dailycommute, #dontjudgechallange}, {BBC.News..World., Le.Tour.de.France})
+## 6: ({#1mdb, #acdc, #bbccycling, #bbcgofigure}, {BBC.News..World., CNN.International})
+## 7: ({}, {Al.Jazeera.English, BBC.News..World., Bloomberg.Business, Breaking.News, Champions.League, CNN.International, Eurosport, Financial.Times, Forbes, Formula.1, Huffington.Post, Le.Tour.de.France, MotoGPŞ, National.Geographic, Premier.League, Reuters.Top.News, Sky.Sports, Sports.Illustrated, The.Associated.Press, The.Economist, The.Guardian, The.New.York.Times, TIME.com, UEFA.com, Wall.Street.Journal, Washington.Post})
+sublattice$support()
+## [1] 1.000000000 0.171673820 0.128755365 0.150214592 0.008583691 0.017167382
+## [7] 0.000000000</code></pre>
+<pre class="r"><code>best_concepts &lt;- sublattice[2:6]
+best_concepts
+## A set of 5 concepts:
+## 1: ({#dailycommute, #dontjudgechallange, #libya, #sousseattack, #tdf2015}, {Le.Tour.de.France})
+## 2: ({#1mdb, #acdc, #bbccycling, #bbcgofigure, #gre, #holocaust, #irantalksvienna, #israel, #japan, #kyivpolice}, {CNN.International})
+## 3: ({#gazalife, #1mdb, #acdc, #bbccycling, #bbcgofigure, #dailycommute, #dontjudgechallange, #ebola, #flooding}, {BBC.News..World.})
+## 4: ({#dailycommute, #dontjudgechallange}, {BBC.News..World., Le.Tour.de.France})
+## 5: ({#1mdb, #acdc, #bbccycling, #bbcgofigure}, {BBC.News..World., CNN.International})
+best_concepts$support()
+## [1] 0.171673820 0.128755365 0.150214592 0.008583691 0.017167382</code></pre>
+</div>
+<div id="implications" class="section level3" number="2.3.4">
+<h3><span class="header-section-number">2.3.4</span> Implications</h3>
+<pre class="r"><code>fc_sn$find_implications()
+
+fc_sn$implications$cardinality() #262
+## [1] 262
+
+colSums(fc_sn$implications$size()) # Implication set with 262 implications.
+##  LHS  RHS 
+##  524 5426
+
+fc_sn$implications$apply_rules(c(&quot;reduction&quot;,
+                                      &quot;composition&quot;,
+                                      &quot;generalization&quot;,
+                                      &quot;simplification&quot;,
+                                      &quot;rsimplification&quot;))
+## Processing batch
+## --&gt; Reduction: from 262 to 262.
+## --&gt; Composition: from 262 to 262.
+## --&gt; Generalization: from 262 to 262.
+## --&gt; Simplification: from 262 to 262.
+## --&gt; Right Simplification: from 262 to 262.
+colSums(fc_sn$implications$size())
+## LHS RHS 
+## 523 284
+fc_sn$implications
+## Implication set with 262 implications.
+## Rule 1: {Wall.Street.Journal, Washington.Post} -&gt; {Al.Jazeera.English,
+##   Breaking.News, Champions.League, Financial.Times, Formula.1,
+##   Le.Tour.de.France, MotoGPŞ, National.Geographic, Premier.League,
+##   The.Associated.Press, The.Economist, The.Guardian, The.New.York.Times,
+##   TIME.com, UEFA.com}
+## Rule 2: {UEFA.com, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 3: {UEFA.com, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 4: {TIME.com, Washington.Post} -&gt; {Sports.Illustrated}
+## Rule 5: {TIME.com, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 6: {TIME.com, UEFA.com} -&gt; {Washington.Post}
+## Rule 7: {The.New.York.Times, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 8: {The.New.York.Times, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 9: {The.New.York.Times, UEFA.com} -&gt; {Washington.Post}
+## Rule 10: {The.New.York.Times, TIME.com} -&gt; {Washington.Post}
+## Rule 11: {The.Guardian, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 12: {The.Guardian, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 13: {The.Guardian, UEFA.com} -&gt; {Washington.Post}
+## Rule 14: {The.Guardian, TIME.com} -&gt; {Washington.Post}
+## Rule 15: {The.Guardian, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 16: {The.Economist, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 17: {The.Economist, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 18: {The.Economist, UEFA.com} -&gt; {Washington.Post}
+## Rule 19: {The.Economist, TIME.com} -&gt; {Washington.Post}
+## Rule 20: {The.Economist, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 21: {The.Associated.Press, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 22: {The.Associated.Press, Wall.Street.Journal} -&gt; {Sky.Sports,
+##   Sports.Illustrated}
+## Rule 23: {The.Associated.Press, UEFA.com} -&gt; {Washington.Post}
+## Rule 24: {The.Associated.Press, TIME.com} -&gt; {Washington.Post}
+## Rule 25: {The.Associated.Press, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 26: {The.Associated.Press, The.Guardian} -&gt; {Washington.Post}
+## Rule 27: {The.Associated.Press, The.Economist} -&gt; {Washington.Post}
+## Rule 28: {Sports.Illustrated, Washington.Post} -&gt; {TIME.com}
+## Rule 29: {Sports.Illustrated, Wall.Street.Journal} -&gt; {The.Associated.Press}
+## Rule 30: {Sports.Illustrated, UEFA.com} -&gt; {Washington.Post}
+## Rule 31: {Sports.Illustrated, TIME.com} -&gt; {Washington.Post}
+## Rule 32: {Sports.Illustrated, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 33: {Sports.Illustrated, The.Guardian} -&gt; {Washington.Post}
+## Rule 34: {Sports.Illustrated, The.Economist} -&gt; {Washington.Post}
+## Rule 35: {Sports.Illustrated, The.Associated.Press} -&gt; {Wall.Street.Journal}
+## Rule 36: {Sky.Sports, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 37: {Sky.Sports, Wall.Street.Journal} -&gt; {BBC.News..World.}
+## Rule 38: {Sky.Sports, UEFA.com} -&gt; {Washington.Post}
+## Rule 39: {Sky.Sports, TIME.com} -&gt; {Washington.Post}
+## Rule 40: {Sky.Sports, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 41: {Sky.Sports, The.Economist} -&gt; {Washington.Post}
+## Rule 42: {Sky.Sports, The.Associated.Press} -&gt; {Wall.Street.Journal}
+## Rule 43: {Sky.Sports, Sports.Illustrated} -&gt; {Wall.Street.Journal}
+## Rule 44: {Reuters.Top.News, Washington.Post} -&gt; {CNN.International}
+## Rule 45: {Reuters.Top.News, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 46: {Reuters.Top.News, UEFA.com} -&gt; {Washington.Post}
+## Rule 47: {Reuters.Top.News, TIME.com} -&gt; {Wall.Street.Journal}
+## Rule 48: {Reuters.Top.News, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 49: {Reuters.Top.News, The.Economist} -&gt; {Bloomberg.Business, The.Guardian}
+## Rule 50: {Reuters.Top.News, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 51: {Reuters.Top.News, Sports.Illustrated} -&gt; {Wall.Street.Journal}
+## Rule 52: {Reuters.Top.News, Sky.Sports} -&gt; {Washington.Post}
+## Rule 53: {Premier.League, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 54: {Premier.League, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 55: {Premier.League, UEFA.com} -&gt; {Washington.Post}
+## Rule 56: {Premier.League, TIME.com} -&gt; {Washington.Post}
+## Rule 57: {Premier.League, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 58: {Premier.League, The.Guardian} -&gt; {Washington.Post}
+## Rule 59: {Premier.League, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 60: {Premier.League, Sports.Illustrated} -&gt; {Washington.Post}
+## Rule 61: {Premier.League, Sky.Sports} -&gt; {Washington.Post}
+## Rule 62: {Premier.League, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 63: {National.Geographic, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 64: {National.Geographic, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 65: {National.Geographic, UEFA.com} -&gt; {Washington.Post}
+## Rule 66: {National.Geographic, TIME.com} -&gt; {Washington.Post}
+## Rule 67: {National.Geographic, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 68: {National.Geographic, The.Guardian} -&gt; {Washington.Post}
+## Rule 69: {National.Geographic, The.Economist} -&gt; {Washington.Post}
+## Rule 70: {National.Geographic, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 71: {National.Geographic, Sports.Illustrated} -&gt; {Washington.Post}
+## Rule 72: {National.Geographic, Sky.Sports} -&gt; {Washington.Post}
+## Rule 73: {National.Geographic, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 74: {National.Geographic, Premier.League} -&gt; {Washington.Post}
+## Rule 75: {MotoGPŞ, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 76: {MotoGPŞ, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 77: {MotoGPŞ, UEFA.com} -&gt; {Washington.Post}
+## Rule 78: {MotoGPŞ, TIME.com} -&gt; {Washington.Post}
+## Rule 79: {MotoGPŞ, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 80: {MotoGPŞ, The.Guardian} -&gt; {Washington.Post}
+## Rule 81: {MotoGPŞ, The.Economist} -&gt; {Washington.Post}
+## Rule 82: {MotoGPŞ, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 83: {MotoGPŞ, Sports.Illustrated} -&gt; {Washington.Post}
+## Rule 84: {MotoGPŞ, Sky.Sports} -&gt; {Washington.Post}
+## Rule 85: {MotoGPŞ, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 86: {MotoGPŞ, Premier.League} -&gt; {Washington.Post}
+## Rule 87: {MotoGPŞ, National.Geographic} -&gt; {Washington.Post}
+## Rule 88: {Le.Tour.de.France, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 89: {Le.Tour.de.France, Wall.Street.Journal} -&gt; {Eurosport, Sky.Sports}
+## Rule 90: {Le.Tour.de.France, UEFA.com} -&gt; {Washington.Post}
+## Rule 91: {Le.Tour.de.France, TIME.com} -&gt; {Washington.Post}
+## Rule 92: {Le.Tour.de.France, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 93: {Le.Tour.de.France, The.Guardian} -&gt; {Washington.Post}
+## Rule 94: {Le.Tour.de.France, The.Economist} -&gt; {Washington.Post}
+## Rule 95: {Le.Tour.de.France, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 96: {Le.Tour.de.France, Sports.Illustrated} -&gt; {Washington.Post}
+## Rule 97: {Le.Tour.de.France, Sky.Sports} -&gt; {Wall.Street.Journal}
+## Rule 98: {Le.Tour.de.France, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 99: {Le.Tour.de.France, Premier.League} -&gt; {Washington.Post}
+## Rule 100: {Le.Tour.de.France, National.Geographic} -&gt; {Huffington.Post}
+## Rule 101: {Le.Tour.de.France, MotoGPŞ} -&gt; {Washington.Post}
+## Rule 102: {Huffington.Post, Washington.Post} -&gt; {Bloomberg.Business, Forbes,
+##   Reuters.Top.News}
+## Rule 103: {Huffington.Post, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 104: {Huffington.Post, UEFA.com} -&gt; {Washington.Post}
+## Rule 105: {Huffington.Post, TIME.com} -&gt; {Wall.Street.Journal}
+## Rule 106: {Huffington.Post, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 107: {Huffington.Post, The.Guardian} -&gt; {Washington.Post}
+## Rule 108: {Huffington.Post, The.Economist} -&gt; {Washington.Post}
+## Rule 109: {Huffington.Post, Sports.Illustrated} -&gt; {Wall.Street.Journal}
+## Rule 110: {Huffington.Post, Sky.Sports} -&gt; {Washington.Post}
+## Rule 111: {Huffington.Post, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 112: {Huffington.Post, Premier.League} -&gt; {Washington.Post}
+## Rule 113: {Huffington.Post, National.Geographic} -&gt; {Le.Tour.de.France}
+## Rule 114: {Huffington.Post, MotoGPŞ} -&gt; {Washington.Post}
+## Rule 115: {Huffington.Post, Le.Tour.de.France} -&gt; {National.Geographic}
+## Rule 116: {Formula.1, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 117: {Formula.1, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 118: {Formula.1, UEFA.com} -&gt; {Washington.Post}
+## Rule 119: {Formula.1, TIME.com} -&gt; {Washington.Post}
+## Rule 120: {Formula.1, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 121: {Formula.1, The.Guardian} -&gt; {Washington.Post}
+## Rule 122: {Formula.1, The.Economist} -&gt; {Washington.Post}
+## Rule 123: {Formula.1, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 124: {Formula.1, Sports.Illustrated} -&gt; {Washington.Post}
+## Rule 125: {Formula.1, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 126: {Formula.1, Premier.League} -&gt; {Washington.Post}
+## Rule 127: {Formula.1, National.Geographic} -&gt; {Washington.Post}
+## Rule 128: {Formula.1, MotoGPŞ} -&gt; {Washington.Post}
+## Rule 129: {Formula.1, Le.Tour.de.France} -&gt; {Washington.Post}
+## Rule 130: {Formula.1, Huffington.Post} -&gt; {Washington.Post}
+## Rule 131: {Forbes, Washington.Post} -&gt; {Huffington.Post}
+## Rule 132: {Forbes, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 133: {Forbes, UEFA.com} -&gt; {Washington.Post}
+## Rule 134: {Forbes, TIME.com} -&gt; {Wall.Street.Journal}
+## Rule 135: {Forbes, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 136: {Forbes, The.Guardian} -&gt; {Washington.Post}
+## Rule 137: {Forbes, The.Economist} -&gt; {Washington.Post}
+## Rule 138: {Forbes, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 139: {Forbes, Sports.Illustrated} -&gt; {Wall.Street.Journal}
+## Rule 140: {Forbes, Sky.Sports} -&gt; {Washington.Post}
+## Rule 141: {Forbes, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 142: {Forbes, Premier.League} -&gt; {Washington.Post}
+## Rule 143: {Forbes, National.Geographic} -&gt; {Washington.Post}
+## Rule 144: {Forbes, MotoGPŞ} -&gt; {Washington.Post}
+## Rule 145: {Forbes, Le.Tour.de.France} -&gt; {Washington.Post}
+## Rule 146: {Forbes, Formula.1} -&gt; {Washington.Post}
+## Rule 147: {Financial.Times} -&gt; {Wall.Street.Journal, Washington.Post}
+## Rule 148: {Eurosport, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 149: {Eurosport, Wall.Street.Journal} -&gt; {Le.Tour.de.France}
+## Rule 150: {Eurosport, UEFA.com} -&gt; {Washington.Post}
+## Rule 151: {Eurosport, TIME.com} -&gt; {Washington.Post}
+## Rule 152: {Eurosport, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 153: {Eurosport, The.Guardian} -&gt; {Washington.Post}
+## Rule 154: {Eurosport, The.Economist} -&gt; {Washington.Post}
+## Rule 155: {Eurosport, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 156: {Eurosport, Sports.Illustrated} -&gt; {Washington.Post}
+## Rule 157: {Eurosport, Sky.Sports} -&gt; {Wall.Street.Journal}
+## Rule 158: {Eurosport, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 159: {Eurosport, Premier.League} -&gt; {Washington.Post}
+## Rule 160: {Eurosport, National.Geographic} -&gt; {Washington.Post}
+## Rule 161: {Eurosport, MotoGPŞ} -&gt; {Washington.Post}
+## Rule 162: {Eurosport, Huffington.Post} -&gt; {Washington.Post}
+## Rule 163: {Eurosport, Formula.1} -&gt; {Washington.Post}
+## Rule 164: {Eurosport, Forbes} -&gt; {Washington.Post}
+## Rule 165: {CNN.International, Washington.Post} -&gt; {Reuters.Top.News}
+## Rule 166: {CNN.International, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 167: {CNN.International, UEFA.com} -&gt; {Washington.Post}
+## Rule 168: {CNN.International, TIME.com} -&gt; {Wall.Street.Journal}
+## Rule 169: {CNN.International, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 170: {CNN.International, The.Guardian} -&gt; {The.Economist}
+## Rule 171: {CNN.International, The.Economist} -&gt; {BBC.News..World.}
+## Rule 172: {CNN.International, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 173: {CNN.International, Premier.League} -&gt; {Washington.Post}
+## Rule 174: {CNN.International, National.Geographic} -&gt; {Washington.Post}
+## Rule 175: {CNN.International, MotoGPŞ} -&gt; {Washington.Post}
+## Rule 176: {CNN.International, Le.Tour.de.France} -&gt; {Washington.Post}
+## Rule 177: {CNN.International, Huffington.Post} -&gt; {Washington.Post}
+## Rule 178: {CNN.International, Formula.1} -&gt; {Washington.Post}
+## Rule 179: {CNN.International, Forbes} -&gt; {Washington.Post}
+## Rule 180: {CNN.International, Eurosport} -&gt; {Washington.Post}
+## Rule 181: {Champions.League, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 182: {Champions.League, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 183: {Champions.League, TIME.com} -&gt; {Washington.Post}
+## Rule 184: {Champions.League, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 185: {Champions.League, The.Guardian} -&gt; {Washington.Post}
+## Rule 186: {Champions.League, The.Economist} -&gt; {Washington.Post}
+## Rule 187: {Champions.League, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 188: {Champions.League, Sports.Illustrated} -&gt; {Washington.Post}
+## Rule 189: {Champions.League, Sky.Sports} -&gt; {Washington.Post}
+## Rule 190: {Champions.League, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 191: {Champions.League, Premier.League} -&gt; {Washington.Post}
+## Rule 192: {Champions.League, National.Geographic} -&gt; {Washington.Post}
+## Rule 193: {Champions.League, MotoGPŞ} -&gt; {Washington.Post}
+## Rule 194: {Champions.League, Le.Tour.de.France} -&gt; {Washington.Post}
+## Rule 195: {Champions.League, Huffington.Post} -&gt; {Washington.Post}
+## Rule 196: {Champions.League, Formula.1} -&gt; {Washington.Post}
+## Rule 197: {Champions.League, Forbes} -&gt; {Washington.Post}
+## Rule 198: {Champions.League, Eurosport} -&gt; {Washington.Post}
+## Rule 199: {Champions.League, CNN.International} -&gt; {Washington.Post}
+## Rule 200: {Breaking.News} -&gt; {Wall.Street.Journal, Washington.Post}
+## Rule 201: {Bloomberg.Business, Washington.Post} -&gt; {Huffington.Post}
+## Rule 202: {Bloomberg.Business, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 203: {Bloomberg.Business, UEFA.com} -&gt; {Washington.Post}
+## Rule 204: {Bloomberg.Business, TIME.com} -&gt; {Wall.Street.Journal}
+## Rule 205: {Bloomberg.Business, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 206: {Bloomberg.Business, The.Guardian} -&gt; {Reuters.Top.News,
+##   The.Economist}
+## Rule 207: {Bloomberg.Business, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 208: {Bloomberg.Business, Sports.Illustrated} -&gt; {Wall.Street.Journal}
+## Rule 209: {Bloomberg.Business, Sky.Sports} -&gt; {Washington.Post}
+## Rule 210: {Bloomberg.Business, Premier.League} -&gt; {Washington.Post}
+## Rule 211: {Bloomberg.Business, National.Geographic} -&gt; {Washington.Post}
+## Rule 212: {Bloomberg.Business, MotoGPŞ} -&gt; {Washington.Post}
+## Rule 213: {Bloomberg.Business, Le.Tour.de.France} -&gt; {Washington.Post}
+## Rule 214: {Bloomberg.Business, Huffington.Post} -&gt; {Washington.Post}
+## Rule 215: {Bloomberg.Business, Formula.1} -&gt; {Washington.Post}
+## Rule 216: {Bloomberg.Business, Forbes} -&gt; {Washington.Post}
+## Rule 217: {Bloomberg.Business, Eurosport} -&gt; {Washington.Post}
+## Rule 218: {Bloomberg.Business, CNN.International} -&gt; {Washington.Post}
+## Rule 219: {Bloomberg.Business, Champions.League} -&gt; {Washington.Post}
+## Rule 220: {BBC.News..World., Wall.Street.Journal} -&gt; {Sky.Sports}
+## Rule 221: {BBC.News..World., UEFA.com} -&gt; {Washington.Post}
+## Rule 222: {BBC.News..World., TIME.com} -&gt; {Wall.Street.Journal}
+## Rule 223: {BBC.News..World., The.New.York.Times} -&gt; {Washington.Post}
+## Rule 224: {BBC.News..World., The.Guardian} -&gt; {The.Economist}
+## Rule 225: {BBC.News..World., The.Economist} -&gt; {CNN.International}
+## Rule 226: {BBC.News..World., The.Associated.Press} -&gt; {Wall.Street.Journal}
+## Rule 227: {BBC.News..World., Sports.Illustrated} -&gt; {Wall.Street.Journal}
+## Rule 228: {BBC.News..World., Sky.Sports} -&gt; {Wall.Street.Journal}
+## Rule 229: {BBC.News..World., Reuters.Top.News} -&gt; {CNN.International}
+## Rule 230: {BBC.News..World., Premier.League} -&gt; {Washington.Post}
+## Rule 231: {BBC.News..World., National.Geographic} -&gt; {Washington.Post}
+## Rule 232: {BBC.News..World., MotoGPŞ} -&gt; {Washington.Post}
+## Rule 233: {BBC.News..World., Huffington.Post} -&gt; {Wall.Street.Journal}
+## Rule 234: {BBC.News..World., Formula.1} -&gt; {Washington.Post}
+## Rule 235: {BBC.News..World., Forbes} -&gt; {Wall.Street.Journal}
+## Rule 236: {BBC.News..World., Eurosport} -&gt; {Wall.Street.Journal}
+## Rule 237: {BBC.News..World., Reuters.Top.News, Washington.Post} -&gt;
+##   {Wall.Street.Journal}
+## Rule 238: {BBC.News..World., Champions.League} -&gt; {Washington.Post}
+## Rule 239: {BBC.News..World., Bloomberg.Business} -&gt; {Wall.Street.Journal}
+## Rule 240: {Al.Jazeera.English, Washington.Post} -&gt; {Wall.Street.Journal}
+## Rule 241: {Al.Jazeera.English, Wall.Street.Journal} -&gt; {Washington.Post}
+## Rule 242: {Al.Jazeera.English, UEFA.com} -&gt; {Washington.Post}
+## Rule 243: {Al.Jazeera.English, TIME.com} -&gt; {Washington.Post}
+## Rule 244: {Al.Jazeera.English, The.New.York.Times} -&gt; {Washington.Post}
+## Rule 245: {Al.Jazeera.English, The.Guardian} -&gt; {Washington.Post}
+## Rule 246: {Al.Jazeera.English, The.Economist} -&gt; {Washington.Post}
+## Rule 247: {Al.Jazeera.English, The.Associated.Press} -&gt; {Washington.Post}
+## Rule 248: {Al.Jazeera.English, Sports.Illustrated} -&gt; {Washington.Post}
+## Rule 249: {Al.Jazeera.English, Sky.Sports} -&gt; {Washington.Post}
+## Rule 250: {Al.Jazeera.English, Reuters.Top.News} -&gt; {Washington.Post}
+## Rule 251: {Al.Jazeera.English, Premier.League} -&gt; {Washington.Post}
+## Rule 252: {Al.Jazeera.English, National.Geographic} -&gt; {Washington.Post}
+## Rule 253: {Al.Jazeera.English, MotoGPŞ} -&gt; {Washington.Post}
+## Rule 254: {Al.Jazeera.English, Le.Tour.de.France} -&gt; {Washington.Post}
+## Rule 255: {Al.Jazeera.English, Huffington.Post} -&gt; {Washington.Post}
+## Rule 256: {Al.Jazeera.English, Formula.1} -&gt; {Washington.Post}
+## Rule 257: {Al.Jazeera.English, Forbes} -&gt; {Washington.Post}
+## Rule 258: {Al.Jazeera.English, Eurosport} -&gt; {Washington.Post}
+## Rule 259: {Al.Jazeera.English, CNN.International} -&gt; {Washington.Post}
+## Rule 260: {Al.Jazeera.English, Champions.League} -&gt; {Washington.Post}
+## Rule 261: {Al.Jazeera.English, Bloomberg.Business} -&gt; {Washington.Post}
+## Rule 262: {Al.Jazeera.English, BBC.News..World.} -&gt; {Washington.Post}</code></pre>
+</div>
 </div>
 </div>
 <div id="deeper-analysis" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> Deeper analysis</h1>
+<p>As arules analysis failed, this part was not conducted.</p>
 </div>
 </div>
 
